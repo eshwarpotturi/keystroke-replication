@@ -23,7 +23,7 @@ for t,sub,tr,te,sp,ep,claim in spec:
 
 def lap(tr,te,ep,title,within_tr,within_ep):
     g=grp(tr,te,"random",ep); w=grp(within_tr,within_tr,"random",within_ep)
-    if g: rows.append(dict(title=title,sub=f"Different laptop, room and microphone, same 22 kHz format. Same-laptop score for comparison: {w['mean']*100:.1f}%" if w else "Different laptop",claim=None,**g))
+    if g: rows.append(dict(title=title,sub=f"Different laptop, room and microphone, same 22 kHz format. Same-laptop score for comparison: {w['mean']*100:.1f}%" if w else "Different laptop",claim=None,within=(w["mean"] if w else None),**g))
 lap("rpractical","rmac",80,"Train on MacBook Pro 16 (M1 Pro), test on MacBook Pro (M3)","rpractical",80)
 lap("rmac","rpractical",150,"Train on MacBook Pro (M3), test on MacBook Pro 16 (M1 Pro)","rmac",150)
 json.dump(rows,open("data/summary.json","w"),indent=1)

@@ -4,150 +4,289 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Keystroke Listener</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-:root{--bg:#f6f7f9;--panel:#fff;--ink:#14181f;--muted:#5b6573;--line:#d9dde3;--red:#c62828;--amber:#b26a00;--green:#1b7f3b;--redbg:#fdeaea;--amberbg:#fff3df;--greenbg:#e5f4ea;--blue:#1d5fd1;--grey:#8a93a0;--greybg:#eceef2}
-:root[data-theme=dark]{--bg:#12161c;--panel:#1b212a;--ink:#eef1f5;--muted:#a3adba;--line:#323a46;--red:#ff6b6b;--amber:#ffb454;--green:#4cc27a;--redbg:#3a1f22;--amberbg:#3a2c14;--greenbg:#14301f;--blue:#6ea2ff;--grey:#7d8794;--greybg:#242b35}
+/* Layout: a desktop story. Finding plus a clickable grid of every test press first, one visual per claim, every mark opens its evidence in a pop-up */
+:root{--bg:#f7f6f2;--paper:#fff;--ink:#1b2430;--ink2:#4a5563;--muted:#7a8592;--rule:#e2e0d8;--hover:#f0eee7;
+ --good:#1f9d55;--good-bg:#e4f4ea;--warn:#d49a00;--warn-bg:#fbf0d6;--bad:#d1382c;--bad2:#ec8a80;--bad-bg:#fbe5e2;--none:#b4bbc3;--none-bg:#eef0f2;
+ --xray:#18222d;--xray-ink:#d9e6f5;--xray-dim:#8fa3b8;--gold:#f2c14e;--form:#fbf8ef;--form-line:#d8ceb2;--shade:rgba(20,28,38,.45);
+ --serif:"Fraunces",Georgia,"Times New Roman",serif;--sans:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;color-scheme:light}
+:root[data-theme="dark"]{--bg:#12171d;--paper:#1a2129;--ink:#e8edf2;--ink2:#b4bfcb;--muted:#8b97a4;--rule:#2c3540;--hover:#222b35;
+ --good:#3ccf7e;--good-bg:#14301f;--warn:#f2b632;--warn-bg:#3a2c0c;--bad:#ff6b5e;--bad2:#a84a42;--bad-bg:#3a1714;--none:#56616d;--none-bg:#232b34;
+ --xray:#0b1015;--form:#20242a;--form-line:#4a4436;--shade:rgba(0,0,0,.6);color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header{display:flex;align-items:center;gap:28px;padding:12px 24px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
-h1{font-size:28px;margin:0}h2{font-size:24px;margin:0 0 8px}
-.sub{color:var(--muted);font-size:17px}
-nav{display:flex;gap:6px;margin-left:auto}
-nav button,.btn{font:inherit;font-size:18px;padding:8px 16px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;cursor:pointer}
-nav button.on,.btn.primary,.seg button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
-main{padding:14px 24px 30px}
-.hide{display:none}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:12px}
-.headline{border-left:6px solid var(--blue);font-size:26px;font-weight:700;line-height:1.3}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
-.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;cursor:pointer}
-.kpi:hover{border-color:var(--blue)}.kpi b{font-size:44px;display:block;line-height:1.1}.kpi span{color:var(--muted);font-size:17px}
-.kpi.bad b{color:var(--red)}.kpi.ok b{color:var(--green)}.kpi.mid b{color:var(--amber)}
-.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.step{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
-.step b{display:block;margin-bottom:4px;font-size:21px}.step small{color:var(--muted);font-size:16px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:22px;line-height:1.5;width:1460px;margin:0 auto}
+html{background:var(--bg);overflow-x:hidden}
+.col{width:1400px;margin:0 auto}
+section{padding-block:30px;border-top:1px solid var(--rule)}
+.kicker{font-family:var(--mono);font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+h1,h2{font-family:var(--serif);font-weight:800;letter-spacing:-.01em;text-wrap:balance;margin:0}
+h1{font-size:76px;line-height:1.02}h2{font-size:46px;line-height:1.08;max-width:34ch}p{margin:0}
+.lede{font-size:25px;color:var(--ink2);max-width:75ch;margin-top:10px}.body{color:var(--ink2);max-width:90ch;margin-top:8px}
+.red{color:var(--bad)}.grn{color:var(--good)}.amb{color:var(--warn)}
+.hint{font-size:17px;color:var(--muted);margin-top:10px}.hint::before{content:"↗ "}
+button{font:inherit;color:inherit}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding-top:14px}
+.tabs{display:flex;gap:6px;padding:10px 0 0}
+.tabs button{border:1px solid var(--rule);background:var(--paper);border-radius:99px;padding:6px 18px;font-size:18px;cursor:pointer;color:var(--ink2)}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.toggle{border:1px solid var(--rule);background:var(--paper);border-radius:99px;padding:6px 16px;font-size:17px;cursor:pointer;color:var(--ink2)}
+.hero{padding-block:10px 30px;border-top:0}
+.hero-grid{display:grid;grid-template-columns:1fr 400px;gap:22px;margin-top:18px;align-items:start}
+.papers{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:18px}
+.papers canvas{width:100%;display:block;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chips button{border:1px solid var(--rule);background:var(--bg);border-radius:99px;padding:4px 14px;font-size:17px;cursor:pointer;color:var(--ink2)}
+.chips button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:18px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{width:14px;height:14px;border-radius:2px;display:inline-block}
+.stats{display:grid;gap:10px}
+.stat{all:unset;box-sizing:border-box;display:block;background:var(--paper);border:1px solid var(--rule);border-left:5px solid var(--c,var(--ink));border-radius:10px;padding:14px 16px;cursor:pointer}
+.stat:hover{background:var(--hover)}.stat:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.stat b{display:block;font-family:var(--serif);font-weight:800;font-size:48px;line-height:1.05;color:var(--c,var(--ink))}
+.stat span{font-size:19px;color:var(--ink2);line-height:1.35;display:block}
+.case{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;margin-top:16px;align-items:stretch}
+.form{background:var(--form);border:1px solid var(--form-line);border-radius:8px;padding:20px;font-family:var(--mono);font-size:18px;display:grid;gap:10px;align-content:start}
+.ft{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border-bottom:1px dashed var(--form-line);padding-bottom:8px}
+.typed{font-size:44px;letter-spacing:.12em;color:var(--ink)}
+.vs{align-self:center;font-family:var(--serif);font-size:24px;color:var(--muted)}
+.xray{background:var(--xray);color:var(--xray-ink);border-radius:8px;padding:20px;font-family:var(--mono);font-size:18px;display:grid;gap:10px;align-content:start}
+.xray .ft{color:var(--xray-dim);border-bottom-color:#33414f}
+.keys{display:flex;gap:8px;flex-wrap:wrap}
+.k{width:92px;text-align:center;border:1px solid #33414f;border-radius:6px;padding:6px 2px;cursor:pointer;background:#1d2a37}
+.k:hover{border-color:var(--gold)}.k canvas{width:72px;height:56px;image-rendering:pixelated;display:block;margin:2px auto;border-radius:3px}
+.k .a{font-size:15px;color:var(--xray-dim)}.k .b{font-size:32px;font-weight:500}.k .b.ok{color:#6fe0a0}.k .b.no{color:#ff8a80}
+.verdict{margin-top:12px;border-radius:6px;padding:12px 18px;font-size:21px;background:var(--bad-bg);border-left:5px solid var(--bad)}
+.verdict.g{background:var(--good-bg);border-left-color:var(--good)}
+.chart{margin-top:14px;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:16px 20px 12px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart svg text{font-family:var(--sans);fill:var(--ink2);font-size:17px}.chart svg .lab{fill:var(--ink);font-weight:600}
+.chart svg .val{font-family:var(--mono);font-size:15.5px;fill:var(--ink2)}.chart svg .axis{stroke:var(--rule)}
+.chart svg .clk{cursor:pointer}.chart svg .clk:hover rect{filter:brightness(1.12)}
+.cap{font-size:17px;color:var(--muted);margin-top:6px}
+.read{font-size:20px;color:var(--ink2);max-width:100ch;margin-top:8px}.read b{color:var(--ink)}
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:14px}
+.act{background:var(--paper);border:1px solid var(--rule);border-top:5px solid var(--good);border-radius:10px;padding:18px 20px}
+.act b{font-family:var(--serif);font-size:27px;display:block;margin-bottom:4px}.act p{color:var(--ink2);font-size:20px}
+.method{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:14px}
+.method div{border-top:2px solid var(--ink);padding-top:8px;font-size:19px;color:var(--ink2)}.method b{display:block;color:var(--ink);font-size:21px}
+.fine{font-size:18px;color:var(--muted);max-width:110ch;margin-top:12px}.fine a,.read a{color:var(--ink2)}
+footer{padding-block:18px 36px;font-size:17px;color:var(--muted)}
+/* listen tool */
+.tool{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:18px 22px;margin-top:14px}
 .ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-.ctl input{font:inherit;font-size:28px;padding:6px 14px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:380px}
-.seg{display:inline-flex;gap:6px}.seg button{font:inherit;font-size:18px;padding:8px 16px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;cursor:pointer}
-.help{color:var(--muted);font-size:16px}
-.cells{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0}
-.cell{width:118px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px 4px;cursor:pointer;background:var(--bg)}
-.cell:hover{border-color:var(--blue)}.cell .t{font-size:30px;font-weight:700}.cell canvas{width:92px;height:80px;image-rendering:pixelated;display:block;margin:4px auto;border-radius:4px}
-.cell .h{font-size:36px;font-weight:700}.good{color:var(--green)}.bad{color:var(--red)}.cell small{color:var(--muted);font-size:15px}
-#sum{font-size:26px;margin:10px 0 0}
-.row{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin-bottom:10px;cursor:pointer;display:grid;grid-template-columns:1fr 150px 260px 140px;gap:16px;align-items:center}
-.row:hover{border-color:var(--blue)}.row h3{margin:0;font-size:21px}.row small{color:var(--muted);font-size:16px}
-.num{font-size:34px;font-weight:700;text-align:right}.lab{color:var(--muted);font-size:15px;text-align:right}
-.bar{height:16px;background:var(--greybg);border-radius:8px;position:relative}.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--blue)}
-.bar u{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--ink)}.bar s{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--red);text-decoration:none}
-.notes{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.note{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--amber);border-radius:10px;padding:12px 16px;font-size:18px}
-table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);font-size:18px}th{color:var(--muted);font-weight:600}
-dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);width:min(900px,94vw);max-height:92vh;padding:18px 22px;overflow:auto;font-size:19px}
-dialog::backdrop{background:rgba(0,0,0,.5)}a{color:var(--blue)}
-.legend{display:flex;gap:18px;color:var(--muted);font-size:16px;margin:4px 0 10px}.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px}
+.ctl input{font:inherit;font-family:var(--mono);font-size:32px;padding:6px 14px;border:1px solid var(--rule);border-radius:8px;background:var(--bg);color:var(--ink);width:400px}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:99px;padding:8px 22px;font-size:19px;cursor:pointer}
+.cells{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+.cell{width:118px;text-align:center;border:1px solid var(--rule);border-radius:10px;padding:8px 4px;cursor:pointer;background:var(--bg)}
+.cell:hover{border-color:var(--ink)}.cell .t{font-family:var(--mono);font-size:30px}.cell canvas{width:92px;height:80px;image-rendering:pixelated;display:block;margin:4px auto;border-radius:4px}
+.cell .h{font-family:var(--mono);font-size:36px;font-weight:500}.cell small{color:var(--muted);font-size:15px}
+#sum{font-size:26px;margin-top:10px}
+/* runs table */
+.row{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:12px 18px;margin-bottom:10px;cursor:pointer;display:grid;grid-template-columns:1fr 150px 260px 140px;gap:16px;align-items:center}
+.row:hover{background:var(--hover)}.row h3{margin:0;font-family:var(--serif);font-size:23px}.row small{color:var(--muted);font-size:16px}
+.num{font-family:var(--mono);font-size:30px;text-align:right}.lab{color:var(--muted);font-size:15px;text-align:right}
+.bar{height:16px;background:var(--none-bg);border-radius:8px;position:relative}.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--ink)}
+.bar u{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--gold)}.bar s{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--bad)}
+.notes{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}.note{background:var(--paper);border:1px solid var(--rule);border-left:5px solid var(--warn);border-radius:10px;padding:12px 16px;font-size:19px;color:var(--ink2)}.note b{color:var(--ink)}
+table{border-collapse:collapse;width:100%;font-size:18px}th{text-align:left;font:600 14px var(--mono);text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--rule);padding:6px}td{border-bottom:1px solid var(--rule);padding:7px 6px;color:var(--ink2)}
+/* modal */
+.shade{position:fixed;inset:0;background:var(--shade);display:grid;place-items:center;z-index:50}
+.modal{width:min(900px,92vw);max-height:88vh;overflow:auto;background:var(--bg);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.35);padding:26px 28px 24px;position:relative;font-size:20px}
+.modal h3{font-family:var(--serif);font-size:34px;margin:0 0 4px;font-weight:800;padding-right:40px}.modal .sub{color:var(--ink2);margin-bottom:14px}
+.close{position:absolute;top:16px;right:18px;border:1px solid var(--rule);background:var(--paper);border-radius:99px;width:36px;height:36px;font-size:20px;cursor:pointer;line-height:1}
+.tip{font-family:var(--sans);position:fixed;pointer-events:none;z-index:60;background:var(--paper);border:1px solid var(--rule);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:8px 12px;font-size:17px}
+.hide{display:none}
 </style>
 </head>
 <body>
-<header>
-  <div><h1>Keystroke Listener</h1><div class="sub">Can a phone hear what you type? An experiment on key-press sound</div></div>
-  <nav id="nav">
-    <button data-v="overview" class="on">Overview</button><button data-v="listen">Listen</button>
-    <button data-v="results">Results</button><button data-v="method">Method</button>
-    <button id="th" title="Switch light or dark">Dark mode</button>
-  </nav>
-</header>
-<main>
+<div class="col">
+  <div class="topbar"><span class="kicker" style="margin:0">Keystroke Listener · An experiment on key-press sound</span><button class="toggle" id="theme" aria-pressed="false">Dark mode</button></div>
+  <div class="tabs" role="tablist"><button role="tab" aria-selected="true" data-t="story">The experiment</button><button role="tab" aria-selected="false" data-t="listen">Listen to a word</button><button role="tab" aria-selected="false" data-t="runs">Every run</button></div>
 
-<section id="v-overview">
-  <div class="card headline" id="headline">/*HEAD*/</div>
-  <div class="kpis" id="kpis"></div>
-  <h2>How we tested it</h2>
-  <div class="steps">
-    <div class="step"><b>1. Record</b>36 keys (a to z, 0 to 9), 25 presses each, on a MacBook. Recorded by a phone beside it, and through a Zoom call.<br><small>Click Listen to hear the picture of each press.</small></div>
-    <div class="step"><b>2. Learn</b>A neural network sees the sound picture of 80% of the presses and learns which key made each one. 10% are kept to choose when to stop.<br><small>No test press is ever used here.</small></div>
-    <div class="step"><b>3. Test</b>The remaining presses, never heard before, are scored once. Chance is 2.8%.<br><small>Three runs with different random splits.</small></div>
-    <div class="step"><b>4. Stress it</b>Test on later presses only, on a different device, and on a different laptop.<br><small>This is where the score changes.</small></div>
-  </div>
-</section>
+<div id="tab-story">
+  <section class="hero">
+    <h1 id="heroTitle"></h1>
+    <p class="lede" id="heroLede"></p>
+    <div class="hero-grid">
+      <div class="papers">
+        <div class="chips" id="chips"></div>
+        <canvas id="grid" role="img" aria-label="Grid of key presses the model never heard in training, green when heard correctly, red when heard as another key. Click a square to open it."></canvas>
+        <div class="legend"><span><i style="background:var(--good)"></i>heard correctly</span><span><i style="background:var(--bad)"></i>heard as another key</span><span id="gridCount"></span></div>
+        <p class="hint">Click any square to open that key press.</p>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </section>
 
-<section id="v-listen" class="hide">
-  <div class="card">
-    <div class="ctl"><span class="seg" id="segdev"><button data-dev="phone" class="on">Phone microphone</button><button data-dev="zoom">Zoom call</button></span>
-    <span class="seg" id="segsp"><button data-sp="random" class="on">Mixed presses</button><button data-sp="ordered">Later presses only</button></span></div>
-    <div class="ctl"><input id="word" value="password1" maxlength="14" aria-label="word"><button class="btn primary" id="go">Listen</button>
-    <span class="help">Letters a to z and digits 0 to 9. Each key plays a press the model never heard in training. Click a key for its sound picture.</span></div>
-    <div class="legend"><span><i style="background:var(--green)"></i>heard correctly</span><span><i style="background:var(--red)"></i>heard as another key</span></div>
-    <div id="cells" class="cells"></div><div id="sum"></div>
-  </div>
-</section>
+  <section>
+    <p class="kicker">One real example</p>
+    <h2>You type a password. A phone beside the laptop writes down what it heard.</h2>
+    <p class="body">The left card is what was typed. The right card is what the model wrote down from the sound of each press. Each press is one the model never heard in training.</p>
+    <div class="case" id="case"></div>
+    <p class="hint">Click a key on the right to see its sound picture.</p>
+  </section>
 
-<section id="v-results" class="hide">
-  <div class="help" style="margin-bottom:8px">Click a row for every run. Bar = our average; black tick = the published figure; red tick = chance (2.8%).</div>
-  <div id="rows"></div>
-  <h2 style="margin-top:16px">What this tells us</h2>
-  <div class="notes" id="notes"></div>
-</section>
+  <section>
+    <p class="kicker">How well</p>
+    <h2>It works under the easiest test. Every harder test lowers the score.</h2>
+    <p class="body" id="howText"></p>
+    <p class="read"><b>How to read:</b> each bar is the share of key presses heard correctly. The red line is chance (2.8%, a guess among 36 keys). The gold tick is the figure published for the same method. <b>For a security team</b>, the number that matters is the one nearest your situation, not the longest bar.</p>
+    <div class="chart"><svg id="bars" viewBox="0 0 1090 470" role="img" aria-label="Accuracy by test condition"></svg>
+      <p class="cap">Average over runs. Click a bar for every run.</p></div>
+  </section>
 
-<section id="v-method" class="hide">
-  <div class="notes">
-    <div class="note" style="border-left-color:var(--blue)"><b>Data.</b> Public recordings of one person typing 25 presses of each of 36 keys on a MacBook Pro, captured by an iPhone beside it and through Zoom (Keystroke-Datasets). The laptop test uses public recordings from two MacBook Pros (R-ASCA).</div>
-    <div class="note" style="border-left-color:var(--blue)"><b>Model.</b> Each press is cut out, turned into a 64-band sound picture, and classified by a compact network that mixes convolution and attention (CoAtNet style), with time-shift and masking augmentation. CPU only, 150 epochs.</div>
-    <div class="note" style="border-left-color:var(--blue)"><b>Discipline.</b> The test split is scored once per run. The stopping epoch is chosen on a separate validation split. Results are averaged over several random splits and every run is listed.</div>
-    <div class="note" style="border-left-color:var(--blue)"><b>Limits.</b> One person, one laptop, one room. Our model is smaller than the one in the paper and trained for fewer epochs. The Listen panel replays held-out presses from the recordings; it does not process anyone's audio.</div>
-    <div class="note" style="border-left-color:var(--blue)"><b>Credit.</b> The approach follows Harrison, Toreini and Mehrnezhad, "A Practical Deep Learning-Based Acoustic Side Channel Attack on Keyboards" (<a href="https://arxiv.org/abs/2308.01074">arXiv 2308.01074</a>). Recordings are theirs (<a href="https://github.com/JBFH-Dev/Keystroke-Datasets">Keystroke-Datasets</a>) and those of a later study (<a href="https://github.com/przybytniowskaj/KeystrokeDetection">R-ASCA</a>). Code and every run: <a href="https://github.com/eshwarpotturi/keystroke-replication">GitHub</a>.</div>
-  </div>
-</section>
+  <section>
+    <p class="kicker">Another device</p>
+    <h2>A model hears only the device it was trained on.</h2>
+    <p class="read"><b>How to read:</b> in each pair the dark bar is the model tested on the device it learned from; the red bar is the same model tested on a different device. <b>For a security team</b>, an attacker would first need recordings from your device, in a similar room.</p>
+    <div class="chart"><svg id="gap" viewBox="0 0 1090 360" role="img" aria-label="Accuracy on the same device versus a different device"></svg>
+      <p class="cap">Phone and Zoom recordings are one MacBook Pro 16 (44.1 kHz phone, 32 kHz Zoom). The laptop pair uses two public sets from different MacBook Pros, rooms and microphones, same 22 kHz format. One run each for the transfers. Click a bar for the run.</p></div>
+  </section>
 
-<dialog id="dlg"></dialog>
-</main>
+  <section>
+    <p class="kicker">So what</p>
+    <h2>How to read a headline about keyboard sound.</h2>
+    <div class="acts">
+      <div class="act"><b>Ask which test it was</b><p>A score on mixed presses from one session is the easy case. Ask for later presses and a different device before believing a headline number.</p></div>
+      <div class="act"><b>Ask what the attacker needs</b><p>In these recordings the model needs examples from the same device and room. Without them it falls to near chance.</p></div>
+      <div class="act"><b>Keep the risk in proportion</b><p>It is real where recordings of your own device exist. It is not a general ability to read any keyboard from any call.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">How we tested it</p>
+    <div class="method">
+      <div><b>Data</b>25 presses of each of 36 keys (a to z, 0 to 9), one person, one MacBook Pro, recorded by a phone and through Zoom. Two public laptop sets for the laptop test.</div>
+      <div><b>Model</b>Each press becomes a 64-band sound picture, read by a compact network mixing convolution and attention. CPU only, 150 epochs.</div>
+      <div><b>Discipline</b>80% of presses to learn, 10% to choose when to stop, 10% kept back and scored once. Several random splits; every run listed.</div>
+      <div><b>Limits</b>One person, one laptop, one room. A smaller model than the one published. The Listen tab replays held-out presses; it does not process anyone's audio.</div>
+    </div>
+    <p class="fine">Method follows Harrison, Toreini and Mehrnezhad, "A Practical Deep Learning-Based Acoustic Side Channel Attack on Keyboards" (<a href="https://arxiv.org/abs/2308.01074">arXiv 2308.01074</a>). Recordings: <a href="https://github.com/JBFH-Dev/Keystroke-Datasets">Keystroke-Datasets</a> and <a href="https://github.com/przybytniowskaj/KeystrokeDetection">R-ASCA</a>. Code and every run: <a href="https://github.com/eshwarpotturi/keystroke-replication">GitHub</a>.</p>
+  </section>
+</div>
+
+<div id="tab-listen" class="hide">
+  <section class="hero">
+    <p class="kicker">Listen to a word</p>
+    <h2>Type something. See what the phone writes down.</h2>
+    <p class="body">Each key plays a press the model never heard in training. Letters a to z and digits 0 to 9.</p>
+    <div class="tool">
+      <div class="chips" id="chipsDev"></div>
+      <div class="ctl"><input id="word" value="password1" maxlength="14" aria-label="word"><button class="btn" id="go">Listen</button></div>
+      <div class="legend"><span><i style="background:var(--good)"></i>heard correctly</span><span><i style="background:var(--bad)"></i>heard as another key</span></div>
+      <div id="cells" class="cells"></div><div id="sum"></div>
+      <p class="hint">Click a key for its sound picture. Press Listen again for different presses.</p>
+    </div>
+  </section>
+</div>
+
+<div id="tab-runs" class="hide">
+  <section class="hero">
+    <p class="kicker">Every run</p>
+    <h2>All eight tests, with every run behind each bar.</h2>
+    <p class="read">Bar = average over runs. Red line = chance (2.8%). Gold tick = the figure published for the same method. Click a row for the runs.</p>
+    <div id="rows" style="margin-top:14px"></div>
+    <div class="notes" id="notes"></div>
+  </section>
+</div>
+<footer>Keystroke Listener · an Innovation Team experiment · every number on this page comes from the run logs in the repository.</footer>
+</div>
+<div id="modalRoot"></div><div id="tip" class="tip hide"></div>
 <script>
 const D=/*DATA*/null, TRY=/*TRY*/null, NOTES=/*NOTES*/[];
-const $=s=>document.querySelector(s), pc=x=>(x*100).toFixed(1)+"%", ex=t=>D.find(r=>r.title===t);
-const dlg=$("#dlg");
-function show(v){document.querySelectorAll("main>section").forEach(s=>s.classList.toggle("hide",s.id!=="v-"+v));document.querySelectorAll("#nav [data-v]").forEach(b=>b.classList.toggle("on",b.dataset.v===v))}
-document.querySelectorAll("#nav [data-v]").forEach(b=>b.onclick=()=>show(b.dataset.v));
-$("#th").onclick=()=>{const d=document.documentElement,dk=d.dataset.theme==="dark";d.dataset.theme=dk?"light":"dark";$("#th").textContent=dk?"Dark mode":"Light mode"};
-
-/* results popup */
-function popup(r){dlg.innerHTML=`<h2>${r.title}</h2><p>${r.sub}. Chance is 2.8% (36 keys). Stopping epoch chosen on validation only; the test split was scored once per run.</p>
-<table><tr><th>Run (seed)</th><th>Stopping epoch</th><th>Validation</th><th>Test</th></tr>${r.runs.map(x=>`<tr><td>${x.seed}</td><td>${x.best_epoch}</td><td>${pc(x.val)}</td><td><b>${pc(x.acc)}</b></td></tr>`).join("")}</table>
-<p class="help">${r.n} test presses per run.</p><p><button class="btn" onclick="dlg.close()">Close</button></p>`;dlg.showModal()}
-
-/* overview tiles */
-const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
-const tiles=[];
-const ph=ex("Phone microphone"),zo=ex("Zoom call"),po=ex("Phone microphone, early vs late presses"),zdo=ex("Zoom, early vs late presses"),p2z=ex("Train on phone, test on Zoom"),z2p=ex("Train on Zoom, test on phone");
-if(ph)tiles.push([pc(ph.mean),"Heard over a phone microphone","ok",ph]);
-if(zo)tiles.push([pc(zo.mean),"Heard through a Zoom call","ok",zo]);
-if(po&&zdo)tiles.push([pc(mean([po.mean,zdo.mean])),"On later presses only (phone and Zoom, average)","mid",po]);
-if(p2z&&z2p)tiles.push([pc(mean([p2z.mean,z2p.mean])),"On a different device (chance is 2.8%)","bad",p2z]);
-$("#kpis").innerHTML=tiles.map((t,i)=>`<div class="kpi ${t[2]}" data-i="${i}"><b>${t[0]}</b><span>${t[1]}</span></div>`).join("");
-document.querySelectorAll(".kpi").forEach(e=>e.onclick=()=>popup(tiles[e.dataset.i][3]));
-
-/* results rows */
-$("#rows").innerHTML=D.map((r,i)=>`<div class="row" data-i="${i}"><div><h3>${r.title}</h3><small>${r.sub}</small></div><div><div class="num">${pc(r.mean)}</div><div class="lab">range ${pc(r.lo)} to ${pc(r.hi)}</div></div><div><div class="bar"><i style="width:${r.mean*100}%"></i><s style="left:2.8%"></s>${r.claim?`<u style="left:${r.claim}%"></u>`:""}</div></div><div class="lab" style="text-align:left">${r.runs.length} run${r.runs.length>1?"s":""} · ${r.n} test presses</div></div>`).join("");
-document.querySelectorAll(".row").forEach(e=>e.onclick=()=>popup(D[e.dataset.i]));
-$("#notes").innerHTML=NOTES.map(n=>`<div class="note">${n}</div>`).join("");
-
-/* listen */
-let dev="phone",sp="random";
+const $=s=>document.querySelector(s),pc=x=>(x*100).toFixed(1)+"%",ex=t=>D.find(r=>r.title===t),mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function modal(html){const r=$("#modalRoot");r.innerHTML=`<div class="shade"><div class="modal" role="dialog" aria-modal="true"><button class="close" aria-label="Close">×</button>${html}</div></div>`;
+ const close=()=>{r.innerHTML=""};r.querySelector(".close").onclick=close;r.querySelector(".shade").onclick=e=>{if(e.target.classList.contains("shade"))close()};
+ document.onkeydown=e=>{if(e.key==="Escape")close()};return r}
+function runModal(r){modal(`<h3>${r.title}</h3><p class="sub">${r.sub}. Chance is 2.8% (36 keys). The stopping epoch was chosen on validation only; the test split was scored once per run.</p>
+<table><tr><th>Run (seed)</th><th>Stopping epoch</th><th>Validation</th><th>Test</th></tr>${r.runs.map(x=>`<tr><td>${x.seed}</td><td>${x.best_epoch}</td><td>${pc(x.val)}</td><td><b>${pc(x.acc)}</b></td></tr>`).join("")}</table><p class="sub" style="margin-top:10px">${r.n} test presses per run.</p>`)}
 const u8=b=>{const s=atob(b),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a};
 function draw(cv,b){cv.width=48;cv.height=64;const g=cv.getContext("2d"),im=g.createImageData(48,64),a=u8(b);
  for(let r=0;r<64;r++)for(let c=0;c<48;c++){const v=a[r*48+c]/255,o=((63-r)*48+c)*4;im.data[o]=Math.round(255*Math.min(1,v*1.6));im.data[o+1]=Math.round(220*v*v);im.data[o+2]=Math.round(120*(1-v)+40);im.data[o+3]=255}g.putImageData(im,0,0)}
-function avail(){document.querySelectorAll("[data-dev]").forEach(b=>b.style.display=(TRY&&(TRY[b.dataset.dev+"_random"]||TRY[b.dataset.dev+"_ordered"]))?"":"none");
- document.querySelectorAll("[data-sp]").forEach(b=>b.style.display=(TRY&&TRY[dev+"_"+b.dataset.sp])?"":"none")}
+function strokeModal(s,lead){const good=s.p===s.k;const r=modal(`<h3>Typed "${s.k}", heard "${s.p}"</h3><p class="sub">${lead||""}${good?"Heard correctly.":"Heard as another key."} The model was ${Math.round(s.c*100)}% sure.${s.t?` Top three guesses: <b>${s.t.join(", ")}</b>.`:""}</p>${s.m?'<canvas id="big" style="width:384px;height:512px;image-rendering:pixelated;border-radius:8px"></canvas><p class="sub">Time across, pitch up.</p>':'<p class="sub">This press was part of a larger test; its sound picture is not stored on the page.</p>'}`);
+ if(s.m)draw(r.querySelector("#big"),s.m)}
+/* theme + tabs */
+$("#theme").onclick=()=>{const d=document.documentElement,dk=d.dataset.theme==="dark";d.dataset.theme=dk?"light":"dark";$("#theme").textContent=dk?"Dark mode":"Light mode";$("#theme").setAttribute("aria-pressed",String(!dk));drawGrid();charts()};
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));["story","listen","runs"].forEach(t=>$("#tab-"+t).classList.toggle("hide",t!==b.dataset.t));if(b.dataset.t==="story"){drawGrid()}});
+
+/* hero */
+const ph=ex("Phone microphone"),zo=ex("Zoom call"),po=ex("Phone microphone, early vs late presses"),zdo=ex("Zoom, early vs late presses"),p2z=ex("Train on phone, test on Zoom"),z2p=ex("Train on Zoom, test on phone");
+const diff=mean([p2z.mean,z2p.mean]),late=mean([po.mean,zdo.mean]);
+$("#heroTitle").innerHTML=`A phone can hear <span class="grn">${Math.round(ph.mean*100)}%</span> of what you type. On another device, <span class="red">${Math.round(diff*100)}%</span>.`;
+$("#heroLede").textContent=`We trained a model on the sound of key presses, then tested it on presses it never heard. Chance is 2.8%. The score is high when the test is easy and falls to near chance when the model meets a different device.`;
+const st=[[pc(ph.mean),"heard over a phone microphone, mixed presses","var(--good)",ph],[pc(zo.mean),"heard through a Zoom call, mixed presses","var(--good)",zo],[pc(late),"on later presses only (phone and Zoom, average)","var(--warn)",po],[pc(diff),"on a different device (chance is 2.8%)","var(--bad)",p2z]];
+$("#stats").innerHTML=st.map((t,i)=>`<button class="stat" style="--c:${t[2]}" data-i="${i}"><b>${t[0]}</b><span>${t[1]}</span></button>`).join("");
+document.querySelectorAll(".stat").forEach(e=>e.onclick=()=>runModal(st[e.dataset.i][3]));
+
+/* grid of every test press */
+const LAB={phone_random:"Phone, mixed presses",zoom_random:"Zoom, mixed presses",phone_ordered:"Phone, later presses",zoom_ordered:"Zoom, later presses",phone_zoom:"Phone to Zoom",zoom_phone:"Zoom to phone",rpractical_rmac:"Laptop A to laptop B",rmac_rpractical:"Laptop B to laptop A"};
+let gsel="phone_random",cells=[];
+const order=Object.keys(LAB).filter(k=>TRY&&TRY[k]);
+$("#chips").innerHTML=order.map(k=>`<button data-k="${k}" aria-pressed="${k===gsel}">${LAB[k]}</button>`).join("");
+document.querySelectorAll("#chips button").forEach(b=>b.onclick=()=>{gsel=b.dataset.k;document.querySelectorAll("#chips button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));drawGrid()});
+function drawGrid(){if(!TRY||!TRY[gsel])return;const S=TRY[gsel].strokes,n=S.length,cv=$("#grid"),W=cv.clientWidth||900,dpr=window.devicePixelRatio||1;
+ const sz=n<=130?30:(n<=600?14:(n<=1000?11:7)),gap=n<=130?4:2,cols=Math.floor((W+gap)/(sz+gap)),rows=Math.ceil(n/cols);
+ cv.width=W*dpr;cv.height=(rows*(sz+gap))*dpr;cv.style.height=(rows*(sz+gap))+"px";const g=cv.getContext("2d");g.scale(dpr,dpr);g.clearRect(0,0,W,rows*(sz+gap));
+ cells=[];const ok=css("--good"),no=css("--bad");let right=0;
+ S.forEach((s,i)=>{const x=(i%cols)*(sz+gap),y=Math.floor(i/cols)*(sz+gap);g.fillStyle=s.p===s.k?ok:no;g.fillRect(x,y,sz,sz);if(s.p===s.k)right++;cells.push([x,y,sz,i])});
+ cv._m={sz,gap,cols};$("#gridCount").textContent=`${n} presses · ${right} heard correctly (${(100*right/n).toFixed(1)}%)`}
+$("#grid").onclick=e=>{const cv=$("#grid"),r=cv.getBoundingClientRect(),{sz,gap,cols}=cv._m,x=e.clientX-r.left,y=e.clientY-r.top,c=Math.floor(x/(sz+gap)),rw=Math.floor(y/(sz+gap)),i=rw*cols+c;
+ const S=TRY[gsel].strokes;if(c<cols&&S[i])strokeModal(S[i],`${LAB[gsel]}. `)};
+
+/* example */
+function example(){const S=TRY&&TRY.phone_random;if(!S)return;const w="password1",typed=[],pick=[];
+ [...w].forEach(ch=>{const c=S.strokes.filter(s=>s.k===ch);if(c.length)pick.push(c[0])});
+ const ok=pick.filter(s=>s.p===s.k).length;
+ $("#case").innerHTML=`<div class="form"><div class="ft">Typed on the laptop</div><div class="typed">${pick.map(s=>s.k).join("")}</div><div>The first unseen press of each key, ${pick.length} in all</div></div><div class="vs">vs</div>
+ <div class="xray"><div class="ft">Heard by the phone</div><div class="keys">${pick.map((s,i)=>`<div class="k" data-i="${i}"><div class="a">${s.k}</div><canvas></canvas><div class="b ${s.p===s.k?"ok":"no"}">${s.p}</div></div>`).join("")}</div></div>`;
+ document.querySelectorAll("#case .k").forEach((e,i)=>{draw(e.querySelector("canvas"),pick[i].m);e.onclick=()=>strokeModal(pick[i],"Phone, mixed presses. ")});
+ $("#case").insertAdjacentHTML("afterend",`<div class="verdict ${ok>=pick.length-1?"g":""}"><b>${ok} of ${pick.length} keys heard correctly.</b> The phone wrote "${pick.map(s=>s.p).join("")}".</div>`)}
+example();
+
+/* charts */
+const nice=t=>t.replace(/Train on (.*?), test on (.*)/,"$1 → $2").replace("MacBook Pro 16 (M1 Pro)","Laptop A (M1 Pro)").replace("MacBook Pro (M3)","Laptop B (M3)").replace("Train on ","").replace(/^./,c=>c.toUpperCase());
+function charts(){
+ const X=0,labW=430,barW=560,ink=css("--ink"),bad=css("--bad"),good=css("--good"),gold=css("--gold"),rule=css("--rule");
+ let h="",y=14;const rowH=52;
+ D.forEach((r,i)=>{const w=r.mean*barW,col=r.mean<0.2?bad:(r.mean<0.9?css("--warn"):good);
+  h+=`<g class="clk" data-i="${i}"><rect x="0" y="${y-8}" width="1090" height="${rowH-6}" fill="transparent"/><text class="lab" x="0" y="${y+14}">${nice(r.title)}</text><text x="0" y="${y+34}" style="font-size:14px">${r.runs.length} run${r.runs.length>1?"s":""} · ${r.n} presses</text>
+  <rect x="${labW}" y="${y}" width="${w}" height="26" rx="4" fill="${col}"/><text class="val" x="${labW+Math.max(w,(r.claim||0)/100*barW)+12}" y="${y+19}">${pc(r.mean)}</text>${r.claim?`<rect x="${labW+r.claim/100*barW-1.5}" y="${y-5}" width="3" height="36" fill="${gold}"/>`:""}</g>`;y+=rowH});
+ h+=`<line x1="${labW+0.028*barW}" x2="${labW+0.028*barW}" y1="4" y2="${y}" stroke="${bad}" stroke-width="2"/><text x="${labW+0.028*barW+6}" y="${y+16}" style="font-size:14px">chance 2.8%</text>`;
+ $("#bars").setAttribute("viewBox",`0 0 1090 ${y+26}`);$("#bars").innerHTML=h;
+ document.querySelectorAll("#bars .clk").forEach(e=>e.onclick=()=>runModal(D[e.dataset.i]));
+ const pairs=[["Phone → phone",ph.mean,ph,"Phone → Zoom",p2z.mean,p2z],["Zoom → Zoom",zo.mean,zo,"Zoom → phone",z2p.mean,z2p]];
+ D.filter(r=>r.within!=null).forEach(r=>{const m=r.title.match(/Train on (.*?), test on (.*)/);pairs.push([ (m?m[1]:"Laptop A")+" (own set)",r.within,r,"Other laptop",r.mean,r])});
+ let g="",gy=10;const gw=520,gl=330;
+ pairs.forEach((p,i)=>{g+=`<g class="clk" data-p="${i}" data-w="0"><text class="lab" x="0" y="${gy+20}">${p[0].replace(/\(M1 Pro\)|\(M3\)/,"")}</text><rect x="${gl}" y="${gy}" width="${p[1]*gw}" height="22" rx="4" fill="${ink}"/><text class="val" x="${gl+p[1]*gw+8}" y="${gy+17}">${pc(p[1])}</text></g>
+  <g class="clk" data-p="${i}" data-w="1"><text x="0" y="${gy+50}" style="font-size:16px">${p[3]}</text><rect x="${gl}" y="${gy+28}" width="${Math.max(2,p[4]*gw)}" height="22" rx="4" fill="${bad}"/><text class="val" x="${gl+p[4]*gw+8}" y="${gy+45}">${pc(p[4])}</text></g>`;gy+=72});
+ $("#gap").setAttribute("viewBox",`0 0 1090 ${gy+4}`);$("#gap").innerHTML=g;
+ document.querySelectorAll("#gap .clk").forEach(e=>e.onclick=()=>{const p=pairs[e.dataset.p];runModal(e.dataset.w==="0"?p[2]:p[5])});
+}
+$("#howText").textContent=`Mixed presses (the early and late presses of each key shared between training and testing) give ${pc(ph.mean)} over a phone and ${pc(zo.mean)} over Zoom. Training on the first 20 presses and testing on the last three costs about ${Math.round((mean([ph.mean,zo.mean])-late)*100)} points. A different device costs nearly everything.`;
+charts();setTimeout(drawGrid,0);window.addEventListener("load",drawGrid);
+
+/* every run */
+$("#rows").innerHTML=D.map((r,i)=>`<div class="row" data-i="${i}"><div><h3>${r.title}</h3><small>${r.sub}</small></div><div><div class="num">${pc(r.mean)}</div><div class="lab">range ${pc(r.lo)} to ${pc(r.hi)}</div></div><div><div class="bar"><i style="width:${r.mean*100}%"></i><s style="left:2.8%"></s>${r.claim?`<u style="left:${r.claim}%"></u>`:""}</div></div><div class="lab" style="text-align:left">${r.runs.length} run${r.runs.length>1?"s":""} · ${r.n} presses</div></div>`).join("");
+document.querySelectorAll(".row").forEach(e=>e.onclick=()=>runModal(D[e.dataset.i]));
+$("#notes").innerHTML=NOTES.map(n=>`<div class="note">${n}</div>`).join("");
+
+/* listen tool */
+let dev="phone",sp="random";
+const dopts=[["phone","random","Phone, mixed presses"],["zoom","random","Zoom, mixed presses"],["phone","ordered","Phone, later presses"],["zoom","ordered","Zoom, later presses"]].filter(o=>TRY&&TRY[o[0]+"_"+o[1]]);
+$("#chipsDev").innerHTML=dopts.map((o,i)=>`<button data-i="${i}" aria-pressed="${i===0}">${o[2]}</button>`).join("");
+document.querySelectorAll("#chipsDev button").forEach(b=>b.onclick=()=>{const o=dopts[b.dataset.i];dev=o[0];sp=o[1];document.querySelectorAll("#chipsDev button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));listen()});
 function listen(){const S=TRY&&TRY[dev+"_"+sp],box=$("#cells"),sum=$("#sum");box.innerHTML="";if(!S){sum.textContent="No data for this set-up.";return}
- const w=[...$("#word").value.toLowerCase()].filter(c=>/[a-z0-9]/.test(c));let ok=0,n=0,miss=0,heard="";
+ const w=[...$("#word").value.toLowerCase()].filter(c=>/[a-z0-9]/.test(c));let okc=0,n=0,miss=0,heard="";
  w.forEach(ch=>{const c=S.strokes.filter(s=>s.k===ch),d=document.createElement("div");d.className="cell";
   if(!c.length){miss++;heard+="_";d.innerHTML=`<div class="t">${ch}</div><small>no unseen press of this key</small>`;box.appendChild(d);return}
-  const s=c[Math.floor(Math.random()*c.length)];n++;const good=s.p===ch;if(good)ok++;heard+=s.p;
-  d.innerHTML=`<div class="t">${ch}</div><canvas></canvas><div class="h ${good?"good":"bad"}">${s.p}</div><small>${Math.round(s.c*100)}% sure</small>`;draw(d.querySelector("canvas"),s.m);
-  d.onclick=()=>{dlg.innerHTML=`<h2>Typed "${ch}", heard "${s.p}"</h2><canvas id="big" style="width:384px;height:512px;image-rendering:pixelated;border-radius:8px"></canvas><p>The picture is the sound of one key press: time across, pitch up. The model's top three guesses: <b>${s.t.join(", ")}</b>. ${good?"Correct.":"Wrong."}</p><p><button class="btn" onclick="dlg.close()">Close</button></p>`;draw(dlg.querySelector("#big"),s.m);dlg.showModal()};
-  box.appendChild(d)});
- sum.innerHTML=n?`Typed <b>${w.join("")}</b> &rarr; heard <b>${heard}</b> &mdash; ${ok} of ${n} keys right (${Math.round(100*ok/n)}%).${miss?` ${miss} key(s) skipped.`:""}`:"Type some letters or digits."}
-document.querySelectorAll("[data-dev]").forEach(b=>b.onclick=()=>{dev=b.dataset.dev;document.querySelectorAll("[data-dev]").forEach(x=>x.classList.toggle("on",x===b));if(!TRY[dev+"_"+sp])sp=TRY[dev+"_random"]?"random":"ordered";document.querySelectorAll("[data-sp]").forEach(x=>x.classList.toggle("on",x.dataset.sp===sp));avail();listen()});
-document.querySelectorAll("[data-sp]").forEach(b=>b.onclick=()=>{sp=b.dataset.sp;document.querySelectorAll("[data-sp]").forEach(x=>x.classList.toggle("on",x===b));listen()});
-$("#go").onclick=listen;$("#word").onkeydown=e=>{if(e.key==="Enter")listen()};
-if(TRY){avail();listen()}else $("#v-listen").innerHTML="<div class='card'>No recordings loaded.</div>";
+  const s=c[Math.floor(Math.random()*c.length)];n++;const good=s.p===ch;if(good)okc++;heard+=s.p;
+  d.innerHTML=`<div class="t">${ch}</div><canvas></canvas><div class="h" style="color:${good?"var(--good)":"var(--bad)"}">${s.p}</div><small>${Math.round(s.c*100)}% sure</small>`;draw(d.querySelector("canvas"),s.m);
+  d.onclick=()=>strokeModal(s,"");box.appendChild(d)});
+ sum.innerHTML=n?`Typed <b>${w.join("")}</b> &rarr; heard <b>${heard}</b> &mdash; ${okc} of ${n} keys right (${Math.round(100*okc/n)}%).${miss?` ${miss} key(s) skipped.`:""}`:"Type some letters or digits."}
+$("#go").onclick=listen;$("#word").onkeydown=e=>{if(e.key==="Enter")listen()};listen();
 </script>
 </body>
 </html>

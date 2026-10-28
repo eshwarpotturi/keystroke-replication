@@ -147,6 +147,7 @@
   "title": "Train on MacBook Pro 16 (M1 Pro), test on MacBook Pro (M3)",
   "sub": "Different laptop, room and microphone, same 22 kHz format. Same-laptop score for comparison: 59.2%",
   "claim": null,
+  "within": 0.5921787619590759,
   "runs": [
    {
     "seed": 0,
@@ -165,6 +166,7 @@
   "title": "Train on MacBook Pro (M3), test on MacBook Pro 16 (M1 Pro)",
   "sub": "Different laptop, room and microphone, same 22 kHz format. Same-laptop score for comparison: 67.3%",
   "claim": null,
+  "within": 0.6730769276618958,
   "runs": [
    {
     "seed": 0,

@@ -3,6 +3,14 @@ Only strokes that were never used for training or validation are included."""
 import numpy as np,json,base64,os
 KEYS="1234567890qwertyuiopasdfghjklzxcvbnm"
 out={}
+KEYS_=KEYS
+def compact(name,f):
+    d=np.load(f); L=[{"k":KEYS_[y],"p":KEYS_[p],"c":round(float(c),3)} for y,p,c in zip(d["y"],d["pred"],d["conf"])]
+    out[name]={"n":len(L),"acc":float(np.mean([x["k"]==x["p"] for x in L])),"strokes":L,"nomel":True}
+    print(name,len(L),f"acc {out[name]['acc']:.3f}")
+for name,f in (("phone_zoom","data/pred_phone_zoom_random_0.npz"),("zoom_phone","data/pred_zoom_phone_random_0.npz"),
+               ("rpractical_rmac","data/pred_rpractical_rmac_random_0.npz"),("rmac_rpractical","data/pred_rmac_rpractical_random_0.npz")):
+    if os.path.exists(f): compact(name,f)
 for dev in ("phone","zoom"):
     for sp in ("random","ordered"):
         f=f"data/pred_{dev}_{dev}_{sp}_0.npz"
