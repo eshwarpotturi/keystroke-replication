@@ -1,0 +1,15 @@
+2026-10-28T21:53:33 train zoom test zoom split ordered seed 0: train 720 val 72 test 108
+2026-10-28T21:53:37 epoch 1/150 loss 3.739 val 0.000 best_val 0.000@1
+2026-10-28T21:53:55 epoch 10/150 loss 3.242 val 0.097 best_val 0.167@9
+2026-10-28T21:54:17 epoch 20/150 loss 3.055 val 0.111 best_val 0.194@18
+2026-10-28T21:54:38 epoch 30/150 loss 2.510 val 0.208 best_val 0.306@29
+2026-10-28T21:54:59 epoch 40/150 loss 2.136 val 0.208 best_val 0.486@35
+2026-10-28T21:55:21 epoch 50/150 loss 1.576 val 0.708 best_val 0.792@49
+2026-10-28T21:55:41 epoch 60/150 loss 1.360 val 0.833 best_val 0.875@58
+2026-10-28T21:56:02 epoch 70/150 loss 1.113 val 0.931 best_val 0.931@70
+2026-10-28T21:56:23 epoch 80/150 loss 0.998 val 0.972 best_val 0.972@80
+2026-10-28T21:56:45 epoch 90/150 loss 0.960 val 0.889 best_val 0.972@80
+2026-10-28T21:57:06 epoch 100/150 loss 0.880 val 0.944 best_val 0.972@80
+2026-10-28T21:57:27 epoch 110/150 loss 0.815 val 0.903 best_val 0.972@80
+2026-10-28T21:57:48 epoch 120/150 loss 0.773 val 0.972 best_val 0.972@80
+2026-10-28T21:58:09 epoch 130/150 loss 0.757 val 0.958 best_val 0.972@80

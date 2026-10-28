@@ -1,0 +1,18 @@
+2026-10-28T21:48:05 train phone test phone split ordered seed 0: train 720 val 72 test 108
+2026-10-28T21:48:10 epoch 1/150 loss 3.753 val 0.028 best_val 0.028@1
+2026-10-28T21:48:30 epoch 10/150 loss 3.496 val 0.042 best_val 0.042@2
+2026-10-28T21:48:52 epoch 20/150 loss 3.108 val 0.069 best_val 0.125@15
+2026-10-28T21:49:13 epoch 30/150 loss 2.509 val 0.319 best_val 0.319@30
+2026-10-28T21:49:36 epoch 40/150 loss 2.132 val 0.208 best_val 0.403@39
+2026-10-28T21:49:57 epoch 50/150 loss 1.708 val 0.597 best_val 0.625@48
+2026-10-28T21:50:19 epoch 60/150 loss 1.464 val 0.319 best_val 0.750@59
+2026-10-28T21:50:41 epoch 70/150 loss 1.230 val 0.667 best_val 0.792@66
+2026-10-28T21:51:03 epoch 80/150 loss 1.093 val 0.819 best_val 0.819@80
+2026-10-28T21:51:24 epoch 90/150 loss 1.184 val 0.806 best_val 0.861@83
+2026-10-28T21:51:45 epoch 100/150 loss 0.931 val 0.861 best_val 0.889@94
+2026-10-28T21:52:05 epoch 110/150 loss 0.914 val 0.889 best_val 0.903@104
+2026-10-28T21:52:27 epoch 120/150 loss 0.824 val 0.847 best_val 0.903@104
+2026-10-28T21:52:48 epoch 130/150 loss 0.828 val 0.861 best_val 0.903@104
+2026-10-28T21:53:10 epoch 140/150 loss 0.839 val 0.917 best_val 0.931@134
+2026-10-28T21:53:30 epoch 150/150 loss 0.791 val 0.917 best_val 0.931@134
+2026-10-28T21:53:31 RESULT train=phone test=phone split=ordered seed=0 best_epoch=134 val=0.9306 test=0.8519

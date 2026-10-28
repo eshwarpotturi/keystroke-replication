@@ -1,0 +1,7 @@
+2026-10-28T21:34:23 START phone phone 0 random
+2026-10-28T21:42:29 RESULT train=phone test=phone split=random seed=0 best_epoch=97 val=0.9667 test=0.9444
+2026-10-28T21:42:29 START zoom zoom 0 random
+2026-10-28T21:48:03 RESULT train=zoom test=zoom split=random seed=0 best_epoch=109 val=0.9444 test=0.9444
+2026-10-28T21:48:04 START phone phone 0 ordered
+2026-10-28T21:53:31 RESULT train=phone test=phone split=ordered seed=0 best_epoch=134 val=0.9306 test=0.8519
+2026-10-28T21:53:31 START zoom zoom 0 ordered

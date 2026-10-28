@@ -54,39 +54,21 @@
   "epochs": 150
  },
  {
-  "title": "Phone microphone, short run (90 epochs)",
-  "sub": "Matched baseline for the two stricter checks",
-  "claim": null,
-  "runs": [
-   {
-    "seed": 0,
-    "acc": 0.8777777552604675,
-    "best_epoch": 72,
-    "val": 0.9333333373069763
-   }
-  ],
-  "mean": 0.8777777552604675,
-  "lo": 0.8777777552604675,
-  "hi": 0.8777777552604675,
-  "n": 90,
-  "epochs": 90
- },
- {
   "title": "Phone microphone, early vs late presses",
   "sub": "Train on presses 1-20 of each key, test on presses 23-25",
   "claim": null,
   "runs": [
    {
     "seed": 0,
-    "acc": 0.7314814925193787,
-    "best_epoch": 62,
-    "val": 0.8055555820465088
+    "acc": 0.8518518805503845,
+    "best_epoch": 134,
+    "val": 0.9305555820465088
    }
   ],
-  "mean": 0.7314814925193787,
-  "lo": 0.7314814925193787,
-  "hi": 0.7314814925193787,
+  "mean": 0.8518518805503845,
+  "lo": 0.8518518805503845,
+  "hi": 0.8518518805503845,
   "n": 108,
-  "epochs": 90
+  "epochs": 150
  }
 ]

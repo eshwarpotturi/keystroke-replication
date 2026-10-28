@@ -13,9 +13,19 @@ h1{font-size:38px;margin:0 0 6px}p.sub{color:var(--mute);margin:0 0 22px;font-si
 h2{font-size:26px;margin:28px 0 10px}.note{background:var(--card);border-left:6px solid var(--warn);border-radius:8px;padding:14px 20px;margin:10px 0}
 dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);max-width:760px;width:90%;padding:26px;font-size:20px}dialog::backdrop{background:#0008}
 table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--line);padding:6px 10px;text-align:left}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:14px}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.ctl input{font:inherit;font-size:24px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:340px}
+.seg button.on{background:var(--acc);color:#fff;border-color:var(--acc)}.cells{display:flex;gap:8px;flex-wrap:wrap}.cell{width:92px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px 4px;cursor:pointer;background:var(--bg)}
+.cell:hover{border-color:var(--acc)}.cell .t{font-size:26px;font-weight:700}.cell canvas{width:72px;height:64px;image-rendering:pixelated;display:block;margin:4px auto}.cell .h{font-size:30px;font-weight:700}.good{color:var(--ok)}.bad{color:#c0392b}.cell small{color:var(--mute);font-size:14px}
+#sum{font-size:24px;margin:10px 0 0}
 </style></head><body>
 <div class="top"><div><h1>Can a phone hear what you type?</h1><p class="sub">A replication of "A Practical Deep Learning-Based Acoustic Side Channel Attack on Keyboards" (Harrison, Toreini, Mehrnezhad, 2023) on the authors' own public recordings.</p></div><button id="th">Dark mode</button></div>
 <div class="head" id="head"></div>
+<h2>Try it: type something, see what a phone hears</h2>
+<div class="panel"><div class="ctl"><span class="seg"><button data-dev="phone" class="on">Phone microphone</button> <button data-dev="zoom">Zoom call</button></span>
+<span class="seg"><button data-sp="random" class="on">Paper's split</button> <button data-sp="ordered">Stricter split</button></span></div>
+<div class="ctl"><input id="word" value="password1" maxlength="14" aria-label="word"><button id="go">Listen</button><small style="color:var(--mute)">Letters a-z and digits 0-9. Uses key presses the model never saw in training, from the authors' recordings. It does not listen to your audio.</small></div>
+<div id="cells" class="cells"></div><div id="sum"></div></div>
 <h2>Results</h2><p class="sub" style="margin-top:0">Click a row for every run. Bar = our mean; black tick = the paper's figure.</p><div id="rows"></div>
 <h2>How to read this</h2><div id="notes"></div>
 <dialog id="dlg"></dialog>
@@ -34,4 +44,24 @@ $("#rows").innerHTML=D.map((r,i)=>`<div class="row" data-i="${i}"><div><h3>${r.t
 document.querySelectorAll(".row").forEach(e=>e.onclick=()=>{const r=D[e.dataset.i];$("#dlg").innerHTML=`<h2 style="margin-top:0">${r.title}</h2><p>${r.sub}. Chance is 2.8% (36 keys). Epoch count chosen on the validation split only; the test split was scored once per run.</p><table><tr><th>Seed</th><th>Best epoch</th><th>Validation</th><th>Test</th></tr>${r.runs.map(x=>`<tr><td>${x.seed}</td><td>${x.best_epoch}</td><td>${pc(x.val)}</td><td><b>${pc(x.acc)}</b></td></tr>`).join("")}</table><p><button onclick="dlg.close()">Close</button></p>`;$("#dlg").showModal()});
 $("#notes").innerHTML=/*NOTES*/[].map(n=>`<div class="note">${n}</div>`).join("");
 $("#th").onclick=()=>{const d=document.documentElement;const dk=d.dataset.theme==="dark";d.dataset.theme=dk?"light":"dark";$("#th").textContent=dk?"Dark mode":"Light mode"};
+
+const TRY=/*TRY*/null;let dev="phone",sp="random";
+const u8=b=>{const s=atob(b),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a};
+function draw(cv,b){cv.width=48;cv.height=64;const g=cv.getContext("2d"),im=g.createImageData(48,64),a=u8(b);
+ for(let r=0;r<64;r++)for(let c=0;c<48;c++){const v=a[r*48+c]/255,o=((63-r)*48+c)*4;im.data[o]=Math.round(255*Math.min(1,v*1.6));im.data[o+1]=Math.round(220*v*v);im.data[o+2]=Math.round(120*(1-v)+40);im.data[o+3]=255}g.putImageData(im,0,0)}
+function avail(){for(const b of document.querySelectorAll("[data-dev]"))b.style.display=(TRY&&(TRY[b.dataset.dev+"_random"]||TRY[b.dataset.dev+"_ordered"]))?"":"none";
+ for(const b of document.querySelectorAll("[data-sp]"))b.style.display=(TRY&&TRY[dev+"_"+b.dataset.sp])?"":"none"}
+function listen(){const S=TRY&&TRY[dev+"_"+sp];const box=document.querySelector("#cells"),sum=document.querySelector("#sum");box.innerHTML="";if(!S){sum.textContent="No data for this set-up yet.";return}
+ const w=[...document.querySelector("#word").value.toLowerCase()].filter(c=>/[a-z0-9]/.test(c));let ok=0,n=0,miss=0,heard="";
+ w.forEach(ch=>{const c=S.strokes.filter(s=>s.k===ch);const d=document.createElement("div");d.className="cell";
+  if(!c.length){miss++;d.innerHTML=`<div class="t">${ch}</div><small>no unseen press of this key</small>`;box.appendChild(d);heard+="_";return}
+  const s=c[Math.floor(Math.random()*c.length)];n++;const good=s.p===ch;if(good)ok++;heard+=s.p;
+  d.innerHTML=`<div class="t">${ch}</div><canvas></canvas><div class="h ${good?"good":"bad"}">${s.p}</div><small>${Math.round(s.c*100)}% sure</small>`;draw(d.querySelector("canvas"),s.m);
+  d.onclick=()=>{const dl=document.querySelector("#dlg");dl.innerHTML=`<h2 style="margin-top:0">Typed "${ch}", heard "${s.p}"</h2><canvas id="big" style="width:384px;height:512px;image-rendering:pixelated;border-radius:8px"></canvas><p>The picture is the sound of one key press (time across, pitch up). Model's top three guesses: <b>${s.t.join(", ")}</b>. ${good?"Correct.":"Wrong."}</p><p><button onclick="dlg.close()">Close</button></p>`;draw(dl.querySelector("#big"),s.m);dl.showModal()};
+  box.appendChild(d)});
+ sum.innerHTML=n?`Typed <b>${w.join("")}</b> &rarr; heard <b>${heard}</b> &mdash; ${ok} of ${n} keys right (${Math.round(100*ok/n)}%).${miss?` ${miss} key(s) skipped.`:""}`:"Type some letters or digits."}
+document.querySelectorAll("[data-dev]").forEach(b=>b.onclick=()=>{dev=b.dataset.dev;document.querySelectorAll("[data-dev]").forEach(x=>x.classList.toggle("on",x===b));if(!TRY[dev+"_"+sp]){sp=TRY[dev+"_random"]?"random":"ordered"}document.querySelectorAll("[data-sp]").forEach(x=>x.classList.toggle("on",x.dataset.sp===sp));avail();listen()});
+document.querySelectorAll("[data-sp]").forEach(b=>b.onclick=()=>{sp=b.dataset.sp;document.querySelectorAll("[data-sp]").forEach(x=>x.classList.toggle("on",x===b));listen()});
+document.querySelector("#go").onclick=listen;document.querySelector("#word").onkeydown=e=>{if(e.key==="Enter")listen()};
+if(TRY){avail();listen()}else document.querySelector(".panel").style.display="none";
 </script></body></html>

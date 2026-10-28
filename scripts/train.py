@@ -6,6 +6,11 @@ import os; torch.set_num_threads(int(os.environ.get('THREADS','2')))
 def log(*a): print(time.strftime("%Y-%m-%dT%H:%M:%S"),*a,flush=True)
 tr_name,te_name,seed=sys.argv[1],sys.argv[2],int(sys.argv[3]); EPOCHS=int(sys.argv[4]) if len(sys.argv)>4 else 120
 SPLIT=sys.argv[5] if len(sys.argv)>5 else "random"
+import os as _os
+_rf=f"logs/res_{tr_name}_{te_name}_{SPLIT}_{seed}{_os.environ.get('TAG','')}.json"
+_pf=f"data/pred_{tr_name}_{te_name}_{SPLIT}_{seed}{_os.environ.get('TAG','')}.npz"
+if _os.path.exists(_rf) and _os.path.exists(_pf) and json.load(open(_rf)).get("epochs")==EPOCHS:
+    log("already done at this epoch count, skipping:",_rf); sys.exit(0)
 random.seed(seed);np.random.seed(seed);torch.manual_seed(seed)
 def mel_fn(sr):
     fb=torch.tensor(librosa.filters.mel(sr=sr,n_fft=1536,n_mels=64,fmin=100,fmax=2500),dtype=torch.float32)
@@ -79,6 +84,9 @@ for ep in range(1,EPOCHS+1):
     va=evaluate(Mva,yva); hist.append((ep,round(tl/len(ytr),4),round(va,4)))
     if va>best: best,best_ep,best_state=va,ep,{k:v.clone() for k,v in model.state_dict().items()}
     if ep%10==0 or ep==1: log(f"epoch {ep}/{EPOCHS} loss {tl/len(ytr):.3f} val {va:.3f} best_val {best:.3f}@{best_ep}")
-model.load_state_dict(best_state); test=evaluate(Mte,yte)   # test scored ONCE, with the epoch chosen on validation
+model.load_state_dict(best_state); test=evaluate(Mte,yte)
+model.eval()
+with torch.no_grad(): P=torch.softmax(model(norm(Mte)),1)
+np.savez_compressed(f"data/pred_{tr_name}_{te_name}_{SPLIT}_{seed}{os.environ.get('TAG','')}.npz",mel=Mte[:,0].numpy().astype(np.float16),y=yte.numpy(),pred=P.argmax(1).numpy(),conf=P.max(1).values.numpy(),top3=P.topk(3,1).indices.numpy())   # test scored ONCE, with the epoch chosen on validation
 log(f"RESULT train={tr_name} test={te_name} split={SPLIT} seed={seed} best_epoch={best_ep} val={best:.4f} test={test:.4f}")
 json.dump({"train":tr_name,"test_set":te_name,"split":SPLIT,"seed":seed,"epochs":EPOCHS,"best_epoch":best_ep,"val":best,"test_acc":test,"n_test":len(yte),"hist":hist},open(f"logs/res_{tr_name}_{te_name}_{SPLIT}_{seed}{os.environ.get('TAG','')}.json","w"))

@@ -1,2 +1,3 @@
 data/*.npz
+!data/pred_*.npz
 __pycache__/
