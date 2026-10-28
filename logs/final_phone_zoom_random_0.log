@@ -1,1 +1,8 @@
 2026-10-28T21:58:58 train phone test zoom split random seed 0: train 720 val 90 test 900
+2026-10-28T21:59:03 epoch 1/150 loss 3.746 val 0.033 best_val 0.033@1
+2026-10-28T21:59:26 epoch 10/150 loss 3.509 val 0.022 best_val 0.044@6
+2026-10-28T21:59:48 epoch 20/150 loss 3.054 val 0.078 best_val 0.156@19
+2026-10-28T22:00:11 epoch 30/150 loss 2.594 val 0.333 best_val 0.333@24
+2026-10-28T22:00:34 epoch 40/150 loss 2.034 val 0.378 best_val 0.533@33
+2026-10-28T22:00:58 epoch 50/150 loss 1.598 val 0.756 best_val 0.756@50
+2026-10-28T22:01:21 epoch 60/150 loss 1.508 val 0.711 best_val 0.800@58

@@ -2,7 +2,7 @@
 
 Replication of "A Practical Deep Learning-Based Acoustic Side Channel Attack on Keyboards" (arXiv 2308.01074) on the authors' public recordings (JBFH-Dev/Keystroke-Datasets).
 
-**Deployed page:** not yet deployed (GitHub token invalid in the build session). Open `docs/index.html`.
+**Deployed page:** https://eshwarpotturi.github.io/keystroke-replication/
 
 ## Results (test strokes held out; epochs chosen on validation only)
 | Setup | Paper | Ours |
