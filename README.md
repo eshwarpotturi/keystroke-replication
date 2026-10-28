@@ -1,24 +1,34 @@
-# Keystroke replication
+# Keystroke replication: can a phone hear what you type?
 
-Replication of "A Practical Deep Learning-Based Acoustic Side Channel Attack on Keyboards" (arXiv 2308.01074) on the authors' public recordings (JBFH-Dev/Keystroke-Datasets).
+**Live page:** https://eshwarpotturi.github.io/keystroke-replication/
 
-**Deployed page:** https://eshwarpotturi.github.io/keystroke-replication/
+Replication of "A Practical Deep Learning-Based Acoustic Side Channel Attack on Keyboards" (Harrison, Toreini, Mehrnezhad, arXiv 2308.01074) on the authors' public recordings ([JBFH-Dev/Keystroke-Datasets](https://github.com/JBFH-Dev/Keystroke-Datasets)).
 
-## Results (test strokes held out; epochs chosen on validation only)
+## Results
+Test presses were never used in training. The number of epochs was chosen on a validation split only; the test split was scored once per run.
+
 | Setup | Paper | Ours |
 |---|---|---|
-| Phone mic, random split, 150 epochs | 95% | 93.0% mean of 3 runs (88.9 to 95.6) |
-| Zoom, random split, 150 epochs | 93% | 92.2% mean of 2 runs (90.0 to 94.4) |
-| Phone, random split, 90 epochs (matched baseline) | - | 87.8% (1 run) |
-| Phone, early presses train / late presses test, 90 epochs | - | 73.1% (1 run) |
+| Phone microphone, paper's random split | 95% | 93.0% mean of 3 runs (88.9 to 95.6) |
+| Zoom call, paper's random split | 93% | 91.1% mean of 3 runs (88.9 to 94.4) |
+| Phone, train on early presses, test on late presses | - | 84.3% mean of 2 runs (83.3 to 85.2) |
+| Zoom, train on early presses, test on late presses | - | 85.6% mean of 2 runs (83.3 to 88.0) |
+| Train on phone, test on Zoom | - | 4.6% (1 run; chance is 2.8%) |
+| Train on Zoom, test on phone | - | 4.4% (1 run) |
 
-## Not done
-Zoom early-vs-late, phone-to-Zoom transfer, more seeds on the stricter test. One person, one laptop, one room.
+## What it says
+1. The headline claim holds in the paper's own setup.
+2. A single run is noisy: 90 test presses per run, and runs ranged from 88.9% to 95.6%.
+3. The paper's split mixes early and late presses; a stricter split costs about 8 points.
+4. A model trained on one device does not carry over to another (near chance).
 
-## Run
+## Limits
+One person, one laptop, one room. The model is a smaller CoAtNet-style network than the paper's, trained for 150 epochs on a CPU (paper: larger, 1,100 epochs). Phone and Zoom recordings use different sample rates (44.1 kHz and 32 kHz), which may add to the transfer gap. The try-it panel replays held-out presses from the authors' recordings; it does not process audio you supply.
+
+## Run it again
 ```
-python3 scripts/isolate.py      # 25 presses per key, authors' isolator
+python3 scripts/isolate.py                      # 25 presses per key (authors' isolator)
 python3 scripts/train.py phone phone 0 150 random
-python3 scripts/build_report.py
+python3 scripts/build_try.py && python3 scripts/build_report.py
 ```
-Model is a smaller CoAtNet-style network than the paper's; CPU only. Logs carry timestamps in `logs/`.
+Datasets are cloned from the authors' repository (not included). Logs carry timestamps in `logs/`.
