@@ -142,5 +142,41 @@
   "hi": 0.04444444552063942,
   "n": 900,
   "epochs": 150
+ },
+ {
+  "title": "Train on MacBook Pro 16 (M1 Pro), test on MacBook Pro (M3)",
+  "sub": "Different laptop, room and microphone, same 22 kHz format. Same-laptop score for comparison: 59.2%",
+  "claim": null,
+  "runs": [
+   {
+    "seed": 0,
+    "acc": 0.0487329438328743,
+    "best_epoch": 78,
+    "val": 0.6536312699317932
+   }
+  ],
+  "mean": 0.0487329438328743,
+  "lo": 0.0487329438328743,
+  "hi": 0.0487329438328743,
+  "n": 513,
+  "epochs": 80
+ },
+ {
+  "title": "Train on MacBook Pro (M3), test on MacBook Pro 16 (M1 Pro)",
+  "sub": "Different laptop, room and microphone, same 22 kHz format. Same-laptop score for comparison: 67.3%",
+  "claim": null,
+  "runs": [
+   {
+    "seed": 0,
+    "acc": 0.029082773253321648,
+    "best_epoch": 147,
+    "val": 0.8235294222831726
+   }
+  ],
+  "mean": 0.029082773253321648,
+  "lo": 0.029082773253321648,
+  "hi": 0.029082773253321648,
+  "n": 1788,
+  "epochs": 150
  }
 ]

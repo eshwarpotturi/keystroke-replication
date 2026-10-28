@@ -3,3 +3,7 @@
 2026-10-28T22:32:21 START rpractical rpractical 0 random 80
 2026-10-28T22:37:59 RESULT train=rpractical test=rpractical split=random seed=0 best_epoch=78 val=0.6536 test=0.5922
 2026-10-28T22:37:59 START rmac rpractical 0 random 150
+2026-10-28T22:41:08 RESULT train=rmac test=rpractical split=random seed=0 best_epoch=147 val=0.8235 test=0.0291
+2026-10-28T22:41:09 START rmac rmac 0 random 150
+2026-10-28T22:44:20 RESULT train=rmac test=rmac split=random seed=0 best_epoch=147 val=0.8235 test=0.6731
+2026-10-28T22:44:21 ALL DONE laptops

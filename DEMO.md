@@ -22,7 +22,7 @@ Say it first, say it last. Everything else supports it.
 | Is the try-it live audio? | No. It replays held-out presses from the authors' recordings. The model never saw them in training. |
 | Why is your number below the paper's? | Smaller model, 150 epochs on a CPU, and averages over several runs. The paper's single figure sits inside our range. |
 | Is this a real-world risk then? | In these recordings the attack needs training data from the same device and room. We did not test a stranger's keyboard. |
-| Does it fail across laptops too? | Yes in our test: trained on a MacBook Pro 16", it scored near chance on a newer MacBook Pro (see the laptop result in the README). Rooms and microphones also differ, so this is a hint, not proof. |
+| Does it fail across laptops too? | Yes in our test: 4.9% one way and 2.9% the other across two MacBook Pros, against 59% and 67% on each laptop's own recordings. Rooms and microphones also differ, so this is a hint, not proof. |
 | Who is it for? | Nobody yet. It is a replication study. The honest use is as a reality check on a security headline. |
 
 ## What not to claim

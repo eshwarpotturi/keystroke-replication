@@ -1,2 +1,18 @@
 2026-10-28T22:38:01 train rmac test rpractical split random seed 0: train 410 val 51 test 1788
 2026-10-28T22:38:05 epoch 1/150 loss 3.805 val 0.000 best_val 0.000@1
+2026-10-28T22:38:17 epoch 10/150 loss 3.646 val 0.020 best_val 0.020@8
+2026-10-28T22:38:28 epoch 20/150 loss 3.489 val 0.039 best_val 0.098@19
+2026-10-28T22:38:39 epoch 30/150 loss 3.282 val 0.118 best_val 0.118@30
+2026-10-28T22:38:51 epoch 40/150 loss 2.978 val 0.157 best_val 0.196@39
+2026-10-28T22:39:04 epoch 50/150 loss 2.778 val 0.098 best_val 0.275@49
+2026-10-28T22:39:16 epoch 60/150 loss 2.415 val 0.157 best_val 0.353@59
+2026-10-28T22:39:29 epoch 70/150 loss 2.337 val 0.373 best_val 0.373@65
+2026-10-28T22:39:41 epoch 80/150 loss 2.115 val 0.431 best_val 0.431@80
+2026-10-28T22:39:52 epoch 90/150 loss 2.057 val 0.412 best_val 0.549@89
+2026-10-28T22:40:04 epoch 100/150 loss 1.854 val 0.549 best_val 0.608@94
+2026-10-28T22:40:16 epoch 110/150 loss 1.862 val 0.588 best_val 0.667@108
+2026-10-28T22:40:28 epoch 120/150 loss 1.618 val 0.667 best_val 0.784@118
+2026-10-28T22:40:40 epoch 130/150 loss 1.346 val 0.804 best_val 0.804@130
+2026-10-28T22:40:52 epoch 140/150 loss 1.296 val 0.804 best_val 0.804@130
+2026-10-28T22:41:03 epoch 150/150 loss 1.311 val 0.804 best_val 0.824@147
+2026-10-28T22:41:08 RESULT train=rmac test=rpractical split=random seed=0 best_epoch=147 val=0.8235 test=0.0291
