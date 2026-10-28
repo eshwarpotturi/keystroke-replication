@@ -10,11 +10,10 @@ Say it first, say it last. Everything else supports it.
 - Keep the Dark mode button in reserve; light mode is the default.
 
 ## Flow (about 4 minutes)
-1. **The claim (30 s).** A 2023 paper says a phone, or a Zoom call, can recover typed keys with 95% and 93% accuracy. Point at the three tiles.
-2. **Try it (60 s).** In the panel, leave "password1" and click Listen. Read out what the phone "heard". Click one wrong key to show the sound picture and the model's top three guesses. Press Listen again: different presses, different result.
-3. **We reproduced it (30 s).** Results row: phone 93.0%, Zoom 91.1% over three runs each. The claim holds in the paper's own setup.
-4. **Where it bends (60 s).** Click "Stricter split": same panel, later presses, about 84 to 86%. Then the two transfer rows: trained on one device, tested on the other, about 4.5%. Chance is 2.8%.
-5. **Close (30 s).** Repeat the one message. Ask for reactions.
+1. **Overview (45 s).** Read the headline. Point at the four tiles from left to right: 93% over a phone, 91% over Zoom, about 85% on later presses, about 4.5% on a different device. Chance is 2.8%.
+2. **Listen (90 s).** Click Listen, leave "password1", press Listen. Read what the phone "heard". Click a red key to show its sound picture and the model's top three guesses. Press Listen again: different presses, different result. Switch to "Later presses only" to show the score falling.
+3. **Results (60 s).** Open Results. Walk down the bars: the two blue bars near the top, then the short ones. Click the laptop row to show every run.
+4. **Close (30 s).** Repeat the one message. Ask for reactions.
 
 ## Questions you may get, and plain answers
 | Question | Answer |

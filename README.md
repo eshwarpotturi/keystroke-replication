@@ -1,8 +1,10 @@
-# Keystroke replication: can a phone hear what you type?
+# Keystroke Listener
 
-**Live page:** https://eshwarpotturi.github.io/keystroke-replication/
+An experiment: can a phone hear what you type?
 
-Replication of "A Practical Deep Learning-Based Acoustic Side Channel Attack on Keyboards" (Harrison, Toreini, Mehrnezhad, arXiv 2308.01074) on the authors' public recordings ([JBFH-Dev/Keystroke-Datasets](https://github.com/JBFH-Dev/Keystroke-Datasets)).
+**Live dashboard:** https://eshwarpotturi.github.io/keystroke-replication/
+
+We trained a neural network on the sound of key presses and tested it on presses it never heard: through a phone microphone, through a Zoom call, on later presses only, on a different device and on a different laptop. The method follows Harrison, Toreini and Mehrnezhad ([arXiv 2308.01074](https://arxiv.org/abs/2308.01074)) and uses their public recordings ([Keystroke-Datasets](https://github.com/JBFH-Dev/Keystroke-Datasets)) plus the public R-ASCA recordings for the laptop test.
 
 ## Results
 Test presses were never used in training. The number of epochs was chosen on a validation split only; the test split was scored once per run.

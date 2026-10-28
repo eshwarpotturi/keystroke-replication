@@ -1,68 +1,153 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Keystroke Replication</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keystroke Listener</title>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--ink:#14181f;--mute:#566070;--line:#d9dee6;--acc:#1f5fd6;--ok:#157a4a;--warn:#b25a00}
-[data-theme=dark]{--bg:#12161c;--card:#1a2029;--ink:#eef1f5;--mute:#9aa6b6;--line:#2c3541;--acc:#6ea2ff;--ok:#4cc38a;--warn:#f0a24a}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:20px/1.45 system-ui,Segoe UI,sans-serif;padding:28px 40px}
-h1{font-size:38px;margin:0 0 6px}p.sub{color:var(--mute);margin:0 0 22px;font-size:21px}
-.top{display:flex;justify-content:space-between;align-items:flex-start}button{font:inherit;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 14px;cursor:pointer}
-.head{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:22px}.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px}
-.tile b{display:block;font-size:44px;line-height:1.1}.tile span{color:var(--mute)}
-.row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin-bottom:12px;cursor:pointer;display:grid;grid-template-columns:1fr 150px 190px 120px;gap:16px;align-items:center}
-.row:hover{border-color:var(--acc)}.row h3{margin:0;font-size:23px}.row small{color:var(--mute);font-size:17px}.num{font-size:34px;font-weight:700;text-align:right}.lab{color:var(--mute);font-size:15px;text-align:right}
-.bar{height:14px;background:var(--line);border-radius:7px;position:relative}.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:var(--acc)}.bar u{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--ink)}
-h2{font-size:26px;margin:28px 0 10px}.note{background:var(--card);border-left:6px solid var(--warn);border-radius:8px;padding:14px 20px;margin:10px 0}
-dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);max-width:760px;width:90%;padding:26px;font-size:20px}dialog::backdrop{background:#0008}
-table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--line);padding:6px 10px;text-align:left}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:14px}
-.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.ctl input{font:inherit;font-size:24px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:340px}
-.seg button.on{background:var(--acc);color:#fff;border-color:var(--acc)}.cells{display:flex;gap:8px;flex-wrap:wrap}.cell{width:92px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px 4px;cursor:pointer;background:var(--bg)}
-.cell:hover{border-color:var(--acc)}.cell .t{font-size:26px;font-weight:700}.cell canvas{width:72px;height:64px;image-rendering:pixelated;display:block;margin:4px auto}.cell .h{font-size:30px;font-weight:700}.good{color:var(--ok)}.bad{color:#c0392b}.cell small{color:var(--mute);font-size:14px}
-#sum{font-size:24px;margin:10px 0 0}
-</style></head><body>
-<div class="top"><div><h1>Can a phone hear what you type?</h1><p class="sub">A replication of "A Practical Deep Learning-Based Acoustic Side Channel Attack on Keyboards" (Harrison, Toreini, Mehrnezhad, 2023) on the authors' own public recordings.</p></div><button id="th">Dark mode</button></div>
-<div class="panel" style="border-left:6px solid var(--acc)"><b style="font-size:26px" id="headline">/*HEAD*/</b></div>
-<div class="head" id="head"></div>
-<h2>Try it: type something, see what a phone hears</h2>
-<div class="panel"><div class="ctl"><span class="seg"><button data-dev="phone" class="on">Phone microphone</button> <button data-dev="zoom">Zoom call</button></span>
-<span class="seg"><button data-sp="random" class="on">Paper's split</button> <button data-sp="ordered">Stricter split</button></span></div>
-<div class="ctl"><input id="word" value="password1" maxlength="14" aria-label="word"><button id="go">Listen</button><small style="color:var(--mute)">Letters a-z and digits 0-9. Uses key presses the model never saw in training, from the authors' recordings. It does not listen to your audio.</small></div>
-<div id="cells" class="cells"></div><div id="sum"></div></div>
-<h2>Results</h2><p class="sub" style="margin-top:0">Click a row for every run. Bar = our mean; black tick = the paper's figure.</p><div id="rows"></div>
-<h2>How to read this</h2><div id="notes"></div>
-<dialog id="dlg"></dialog>
-<script>
-const D=/*DATA*/null;const pc=x=>(x*100).toFixed(1)+"%";
-const $=s=>document.querySelector(s);
-const by=t=>D.find(r=>r.title.startsWith(t));
-const ph=by("Phone microphone"),zo=by("Zoom call");
-let h="";
-for(const r of [ph,zo]) if(r) h+=`<div class="tile"><b>${pc(r.mean)}</b><span>${r.title}: mean of ${r.runs.length} runs (paper: ${r.claim}%)</span></div>`;
-const strict=D.filter(r=>/early vs late/.test(r.title)),tr=D.filter(r=>/^Train on/.test(r.title));
-if(strict.length) h+=`<div class="tile"><b>${strict.map(r=>pc(r.mean)).join(" / ")}</b><span>Phone, stricter test: early presses train, late presses test</span></div>`;
-else if(tr.length) h+=`<div class="tile"><b>${tr.map(r=>pc(r.mean)).join(" / ")}</b><span>Trained on one device, tested on the other</span></div>`;
-$("#head").innerHTML=h;
-$("#rows").innerHTML=D.map((r,i)=>`<div class="row" data-i="${i}"><div><h3>${r.title}</h3><small>${r.sub}</small></div><div><div class="num">${pc(r.mean)}</div><div class="lab">range ${pc(r.lo)} to ${pc(r.hi)}</div></div><div><div class="bar"><i style="width:${r.mean*100}%"></i>${r.claim?`<u style="left:${r.claim}%"></u>`:""}</div></div><div class="lab" style="text-align:left">${r.runs.length} run${r.runs.length>1?"s":""} · ${r.n} test strokes</div></div>`).join("");
-document.querySelectorAll(".row").forEach(e=>e.onclick=()=>{const r=D[e.dataset.i];$("#dlg").innerHTML=`<h2 style="margin-top:0">${r.title}</h2><p>${r.sub}. Chance is 2.8% (36 keys). Epoch count chosen on the validation split only; the test split was scored once per run.</p><table><tr><th>Seed</th><th>Best epoch</th><th>Validation</th><th>Test</th></tr>${r.runs.map(x=>`<tr><td>${x.seed}</td><td>${x.best_epoch}</td><td>${pc(x.val)}</td><td><b>${pc(x.acc)}</b></td></tr>`).join("")}</table><p><button onclick="dlg.close()">Close</button></p>`;$("#dlg").showModal()});
-$("#notes").innerHTML=/*NOTES*/[].map(n=>`<div class="note">${n}</div>`).join("");
-$("#th").onclick=()=>{const d=document.documentElement;const dk=d.dataset.theme==="dark";d.dataset.theme=dk?"light":"dark";$("#th").textContent=dk?"Dark mode":"Light mode"};
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#14181f;--muted:#5b6573;--line:#d9dde3;--red:#c62828;--amber:#b26a00;--green:#1b7f3b;--redbg:#fdeaea;--amberbg:#fff3df;--greenbg:#e5f4ea;--blue:#1d5fd1;--grey:#8a93a0;--greybg:#eceef2}
+:root[data-theme=dark]{--bg:#12161c;--panel:#1b212a;--ink:#eef1f5;--muted:#a3adba;--line:#323a46;--red:#ff6b6b;--amber:#ffb454;--green:#4cc27a;--redbg:#3a1f22;--amberbg:#3a2c14;--greenbg:#14301f;--blue:#6ea2ff;--grey:#7d8794;--greybg:#242b35}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:28px;padding:12px 24px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+h1{font-size:28px;margin:0}h2{font-size:24px;margin:0 0 8px}
+.sub{color:var(--muted);font-size:17px}
+nav{display:flex;gap:6px;margin-left:auto}
+nav button,.btn{font:inherit;font-size:18px;padding:8px 16px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;cursor:pointer}
+nav button.on,.btn.primary,.seg button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+main{padding:14px 24px 30px}
+.hide{display:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:12px}
+.headline{border-left:6px solid var(--blue);font-size:26px;font-weight:700;line-height:1.3}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;cursor:pointer}
+.kpi:hover{border-color:var(--blue)}.kpi b{font-size:44px;display:block;line-height:1.1}.kpi span{color:var(--muted);font-size:17px}
+.kpi.bad b{color:var(--red)}.kpi.ok b{color:var(--green)}.kpi.mid b{color:var(--amber)}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.step{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.step b{display:block;margin-bottom:4px;font-size:21px}.step small{color:var(--muted);font-size:16px}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.ctl input{font:inherit;font-size:28px;padding:6px 14px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:380px}
+.seg{display:inline-flex;gap:6px}.seg button{font:inherit;font-size:18px;padding:8px 16px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;cursor:pointer}
+.help{color:var(--muted);font-size:16px}
+.cells{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0}
+.cell{width:118px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px 4px;cursor:pointer;background:var(--bg)}
+.cell:hover{border-color:var(--blue)}.cell .t{font-size:30px;font-weight:700}.cell canvas{width:92px;height:80px;image-rendering:pixelated;display:block;margin:4px auto;border-radius:4px}
+.cell .h{font-size:36px;font-weight:700}.good{color:var(--green)}.bad{color:var(--red)}.cell small{color:var(--muted);font-size:15px}
+#sum{font-size:26px;margin:10px 0 0}
+.row{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin-bottom:10px;cursor:pointer;display:grid;grid-template-columns:1fr 150px 260px 140px;gap:16px;align-items:center}
+.row:hover{border-color:var(--blue)}.row h3{margin:0;font-size:21px}.row small{color:var(--muted);font-size:16px}
+.num{font-size:34px;font-weight:700;text-align:right}.lab{color:var(--muted);font-size:15px;text-align:right}
+.bar{height:16px;background:var(--greybg);border-radius:8px;position:relative}.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--blue)}
+.bar u{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--ink)}.bar s{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--red);text-decoration:none}
+.notes{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.note{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--amber);border-radius:10px;padding:12px 16px;font-size:18px}
+table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);font-size:18px}th{color:var(--muted);font-weight:600}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);width:min(900px,94vw);max-height:92vh;padding:18px 22px;overflow:auto;font-size:19px}
+dialog::backdrop{background:rgba(0,0,0,.5)}a{color:var(--blue)}
+.legend{display:flex;gap:18px;color:var(--muted);font-size:16px;margin:4px 0 10px}.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Keystroke Listener</h1><div class="sub">Can a phone hear what you type? An experiment on key-press sound</div></div>
+  <nav id="nav">
+    <button data-v="overview" class="on">Overview</button><button data-v="listen">Listen</button>
+    <button data-v="results">Results</button><button data-v="method">Method</button>
+    <button id="th" title="Switch light or dark">Dark mode</button>
+  </nav>
+</header>
+<main>
 
-const TRY=/*TRY*/null;let dev="phone",sp="random";
+<section id="v-overview">
+  <div class="card headline" id="headline">/*HEAD*/</div>
+  <div class="kpis" id="kpis"></div>
+  <h2>How we tested it</h2>
+  <div class="steps">
+    <div class="step"><b>1. Record</b>36 keys (a to z, 0 to 9), 25 presses each, on a MacBook. Recorded by a phone beside it, and through a Zoom call.<br><small>Click Listen to hear the picture of each press.</small></div>
+    <div class="step"><b>2. Learn</b>A neural network sees the sound picture of 80% of the presses and learns which key made each one. 10% are kept to choose when to stop.<br><small>No test press is ever used here.</small></div>
+    <div class="step"><b>3. Test</b>The remaining presses, never heard before, are scored once. Chance is 2.8%.<br><small>Three runs with different random splits.</small></div>
+    <div class="step"><b>4. Stress it</b>Test on later presses only, on a different device, and on a different laptop.<br><small>This is where the score changes.</small></div>
+  </div>
+</section>
+
+<section id="v-listen" class="hide">
+  <div class="card">
+    <div class="ctl"><span class="seg" id="segdev"><button data-dev="phone" class="on">Phone microphone</button><button data-dev="zoom">Zoom call</button></span>
+    <span class="seg" id="segsp"><button data-sp="random" class="on">Mixed presses</button><button data-sp="ordered">Later presses only</button></span></div>
+    <div class="ctl"><input id="word" value="password1" maxlength="14" aria-label="word"><button class="btn primary" id="go">Listen</button>
+    <span class="help">Letters a to z and digits 0 to 9. Each key plays a press the model never heard in training. Click a key for its sound picture.</span></div>
+    <div class="legend"><span><i style="background:var(--green)"></i>heard correctly</span><span><i style="background:var(--red)"></i>heard as another key</span></div>
+    <div id="cells" class="cells"></div><div id="sum"></div>
+  </div>
+</section>
+
+<section id="v-results" class="hide">
+  <div class="help" style="margin-bottom:8px">Click a row for every run. Bar = our average; black tick = the published figure; red tick = chance (2.8%).</div>
+  <div id="rows"></div>
+  <h2 style="margin-top:16px">What this tells us</h2>
+  <div class="notes" id="notes"></div>
+</section>
+
+<section id="v-method" class="hide">
+  <div class="notes">
+    <div class="note" style="border-left-color:var(--blue)"><b>Data.</b> Public recordings of one person typing 25 presses of each of 36 keys on a MacBook Pro, captured by an iPhone beside it and through Zoom (Keystroke-Datasets). The laptop test uses public recordings from two MacBook Pros (R-ASCA).</div>
+    <div class="note" style="border-left-color:var(--blue)"><b>Model.</b> Each press is cut out, turned into a 64-band sound picture, and classified by a compact network that mixes convolution and attention (CoAtNet style), with time-shift and masking augmentation. CPU only, 150 epochs.</div>
+    <div class="note" style="border-left-color:var(--blue)"><b>Discipline.</b> The test split is scored once per run. The stopping epoch is chosen on a separate validation split. Results are averaged over several random splits and every run is listed.</div>
+    <div class="note" style="border-left-color:var(--blue)"><b>Limits.</b> One person, one laptop, one room. Our model is smaller than the one in the paper and trained for fewer epochs. The Listen panel replays held-out presses from the recordings; it does not process anyone's audio.</div>
+    <div class="note" style="border-left-color:var(--blue)"><b>Credit.</b> The approach follows Harrison, Toreini and Mehrnezhad, "A Practical Deep Learning-Based Acoustic Side Channel Attack on Keyboards" (<a href="https://arxiv.org/abs/2308.01074">arXiv 2308.01074</a>). Recordings are theirs (<a href="https://github.com/JBFH-Dev/Keystroke-Datasets">Keystroke-Datasets</a>) and those of a later study (<a href="https://github.com/przybytniowskaj/KeystrokeDetection">R-ASCA</a>). Code and every run: <a href="https://github.com/eshwarpotturi/keystroke-replication">GitHub</a>.</div>
+  </div>
+</section>
+
+<dialog id="dlg"></dialog>
+</main>
+<script>
+const D=/*DATA*/null, TRY=/*TRY*/null, NOTES=/*NOTES*/[];
+const $=s=>document.querySelector(s), pc=x=>(x*100).toFixed(1)+"%", ex=t=>D.find(r=>r.title===t);
+const dlg=$("#dlg");
+function show(v){document.querySelectorAll("main>section").forEach(s=>s.classList.toggle("hide",s.id!=="v-"+v));document.querySelectorAll("#nav [data-v]").forEach(b=>b.classList.toggle("on",b.dataset.v===v))}
+document.querySelectorAll("#nav [data-v]").forEach(b=>b.onclick=()=>show(b.dataset.v));
+$("#th").onclick=()=>{const d=document.documentElement,dk=d.dataset.theme==="dark";d.dataset.theme=dk?"light":"dark";$("#th").textContent=dk?"Dark mode":"Light mode"};
+
+/* results popup */
+function popup(r){dlg.innerHTML=`<h2>${r.title}</h2><p>${r.sub}. Chance is 2.8% (36 keys). Stopping epoch chosen on validation only; the test split was scored once per run.</p>
+<table><tr><th>Run (seed)</th><th>Stopping epoch</th><th>Validation</th><th>Test</th></tr>${r.runs.map(x=>`<tr><td>${x.seed}</td><td>${x.best_epoch}</td><td>${pc(x.val)}</td><td><b>${pc(x.acc)}</b></td></tr>`).join("")}</table>
+<p class="help">${r.n} test presses per run.</p><p><button class="btn" onclick="dlg.close()">Close</button></p>`;dlg.showModal()}
+
+/* overview tiles */
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+const tiles=[];
+const ph=ex("Phone microphone"),zo=ex("Zoom call"),po=ex("Phone microphone, early vs late presses"),zdo=ex("Zoom, early vs late presses"),p2z=ex("Train on phone, test on Zoom"),z2p=ex("Train on Zoom, test on phone");
+if(ph)tiles.push([pc(ph.mean),"Heard over a phone microphone","ok",ph]);
+if(zo)tiles.push([pc(zo.mean),"Heard through a Zoom call","ok",zo]);
+if(po&&zdo)tiles.push([pc(mean([po.mean,zdo.mean])),"On later presses only (phone and Zoom, average)","mid",po]);
+if(p2z&&z2p)tiles.push([pc(mean([p2z.mean,z2p.mean])),"On a different device (chance is 2.8%)","bad",p2z]);
+$("#kpis").innerHTML=tiles.map((t,i)=>`<div class="kpi ${t[2]}" data-i="${i}"><b>${t[0]}</b><span>${t[1]}</span></div>`).join("");
+document.querySelectorAll(".kpi").forEach(e=>e.onclick=()=>popup(tiles[e.dataset.i][3]));
+
+/* results rows */
+$("#rows").innerHTML=D.map((r,i)=>`<div class="row" data-i="${i}"><div><h3>${r.title}</h3><small>${r.sub}</small></div><div><div class="num">${pc(r.mean)}</div><div class="lab">range ${pc(r.lo)} to ${pc(r.hi)}</div></div><div><div class="bar"><i style="width:${r.mean*100}%"></i><s style="left:2.8%"></s>${r.claim?`<u style="left:${r.claim}%"></u>`:""}</div></div><div class="lab" style="text-align:left">${r.runs.length} run${r.runs.length>1?"s":""} · ${r.n} test presses</div></div>`).join("");
+document.querySelectorAll(".row").forEach(e=>e.onclick=()=>popup(D[e.dataset.i]));
+$("#notes").innerHTML=NOTES.map(n=>`<div class="note">${n}</div>`).join("");
+
+/* listen */
+let dev="phone",sp="random";
 const u8=b=>{const s=atob(b),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a};
 function draw(cv,b){cv.width=48;cv.height=64;const g=cv.getContext("2d"),im=g.createImageData(48,64),a=u8(b);
  for(let r=0;r<64;r++)for(let c=0;c<48;c++){const v=a[r*48+c]/255,o=((63-r)*48+c)*4;im.data[o]=Math.round(255*Math.min(1,v*1.6));im.data[o+1]=Math.round(220*v*v);im.data[o+2]=Math.round(120*(1-v)+40);im.data[o+3]=255}g.putImageData(im,0,0)}
-function avail(){for(const b of document.querySelectorAll("[data-dev]"))b.style.display=(TRY&&(TRY[b.dataset.dev+"_random"]||TRY[b.dataset.dev+"_ordered"]))?"":"none";
- for(const b of document.querySelectorAll("[data-sp]"))b.style.display=(TRY&&TRY[dev+"_"+b.dataset.sp])?"":"none"}
-function listen(){const S=TRY&&TRY[dev+"_"+sp];const box=document.querySelector("#cells"),sum=document.querySelector("#sum");box.innerHTML="";if(!S){sum.textContent="No data for this set-up yet.";return}
- const w=[...document.querySelector("#word").value.toLowerCase()].filter(c=>/[a-z0-9]/.test(c));let ok=0,n=0,miss=0,heard="";
- w.forEach(ch=>{const c=S.strokes.filter(s=>s.k===ch);const d=document.createElement("div");d.className="cell";
-  if(!c.length){miss++;d.innerHTML=`<div class="t">${ch}</div><small>no unseen press of this key</small>`;box.appendChild(d);heard+="_";return}
+function avail(){document.querySelectorAll("[data-dev]").forEach(b=>b.style.display=(TRY&&(TRY[b.dataset.dev+"_random"]||TRY[b.dataset.dev+"_ordered"]))?"":"none");
+ document.querySelectorAll("[data-sp]").forEach(b=>b.style.display=(TRY&&TRY[dev+"_"+b.dataset.sp])?"":"none")}
+function listen(){const S=TRY&&TRY[dev+"_"+sp],box=$("#cells"),sum=$("#sum");box.innerHTML="";if(!S){sum.textContent="No data for this set-up.";return}
+ const w=[...$("#word").value.toLowerCase()].filter(c=>/[a-z0-9]/.test(c));let ok=0,n=0,miss=0,heard="";
+ w.forEach(ch=>{const c=S.strokes.filter(s=>s.k===ch),d=document.createElement("div");d.className="cell";
+  if(!c.length){miss++;heard+="_";d.innerHTML=`<div class="t">${ch}</div><small>no unseen press of this key</small>`;box.appendChild(d);return}
   const s=c[Math.floor(Math.random()*c.length)];n++;const good=s.p===ch;if(good)ok++;heard+=s.p;
   d.innerHTML=`<div class="t">${ch}</div><canvas></canvas><div class="h ${good?"good":"bad"}">${s.p}</div><small>${Math.round(s.c*100)}% sure</small>`;draw(d.querySelector("canvas"),s.m);
-  d.onclick=()=>{const dl=document.querySelector("#dlg");dl.innerHTML=`<h2 style="margin-top:0">Typed "${ch}", heard "${s.p}"</h2><canvas id="big" style="width:384px;height:512px;image-rendering:pixelated;border-radius:8px"></canvas><p>The picture is the sound of one key press (time across, pitch up). Model's top three guesses: <b>${s.t.join(", ")}</b>. ${good?"Correct.":"Wrong."}</p><p><button onclick="dlg.close()">Close</button></p>`;draw(dl.querySelector("#big"),s.m);dl.showModal()};
+  d.onclick=()=>{dlg.innerHTML=`<h2>Typed "${ch}", heard "${s.p}"</h2><canvas id="big" style="width:384px;height:512px;image-rendering:pixelated;border-radius:8px"></canvas><p>The picture is the sound of one key press: time across, pitch up. The model's top three guesses: <b>${s.t.join(", ")}</b>. ${good?"Correct.":"Wrong."}</p><p><button class="btn" onclick="dlg.close()">Close</button></p>`;draw(dlg.querySelector("#big"),s.m);dlg.showModal()};
   box.appendChild(d)});
  sum.innerHTML=n?`Typed <b>${w.join("")}</b> &rarr; heard <b>${heard}</b> &mdash; ${ok} of ${n} keys right (${Math.round(100*ok/n)}%).${miss?` ${miss} key(s) skipped.`:""}`:"Type some letters or digits."}
-document.querySelectorAll("[data-dev]").forEach(b=>b.onclick=()=>{dev=b.dataset.dev;document.querySelectorAll("[data-dev]").forEach(x=>x.classList.toggle("on",x===b));if(!TRY[dev+"_"+sp]){sp=TRY[dev+"_random"]?"random":"ordered"}document.querySelectorAll("[data-sp]").forEach(x=>x.classList.toggle("on",x.dataset.sp===sp));avail();listen()});
+document.querySelectorAll("[data-dev]").forEach(b=>b.onclick=()=>{dev=b.dataset.dev;document.querySelectorAll("[data-dev]").forEach(x=>x.classList.toggle("on",x===b));if(!TRY[dev+"_"+sp])sp=TRY[dev+"_random"]?"random":"ordered";document.querySelectorAll("[data-sp]").forEach(x=>x.classList.toggle("on",x.dataset.sp===sp));avail();listen()});
 document.querySelectorAll("[data-sp]").forEach(b=>b.onclick=()=>{sp=b.dataset.sp;document.querySelectorAll("[data-sp]").forEach(x=>x.classList.toggle("on",x===b));listen()});
-document.querySelector("#go").onclick=listen;document.querySelector("#word").onkeydown=e=>{if(e.key==="Enter")listen()};
-if(TRY){avail();listen()}else document.querySelector(".panel").style.display="none";
-</script></body></html>
+$("#go").onclick=listen;$("#word").onkeydown=e=>{if(e.key==="Enter")listen()};
+if(TRY){avail();listen()}else $("#v-listen").innerHTML="<div class='card'>No recordings loaded.</div>";
+</script>
+</body>
+</html>

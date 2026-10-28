@@ -1,7 +1,7 @@
 [
  {
   "title": "Phone microphone",
-  "sub": "Same recording session, random 80/10/10 split (the paper's setup)",
+  "sub": "Mixed presses: random 80/10/10 split of one recording session",
   "claim": 95,
   "runs": [
    {
@@ -31,7 +31,7 @@
  },
  {
   "title": "Zoom call",
-  "sub": "Same recording session, random 80/10/10 split (the paper's setup)",
+  "sub": "Mixed presses: random 80/10/10 split of one recording session",
   "claim": 93,
   "runs": [
    {
