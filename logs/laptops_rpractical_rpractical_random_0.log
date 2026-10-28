@@ -7,3 +7,5 @@
 2026-10-28T22:35:56 epoch 50/80 loss 2.591 val 0.279 best_val 0.285@48
 2026-10-28T22:36:36 epoch 60/80 loss 2.046 val 0.430 best_val 0.436@57
 2026-10-28T22:37:16 epoch 70/80 loss 1.792 val 0.603 best_val 0.603@70
+2026-10-28T22:37:58 epoch 80/80 loss 1.710 val 0.637 best_val 0.654@78
+2026-10-28T22:37:59 RESULT train=rpractical test=rpractical split=random seed=0 best_epoch=78 val=0.6536 test=0.5922

@@ -1,0 +1,2 @@
+2026-10-28T22:38:01 train rmac test rpractical split random seed 0: train 410 val 51 test 1788
+2026-10-28T22:38:05 epoch 1/150 loss 3.805 val 0.000 best_val 0.000@1
