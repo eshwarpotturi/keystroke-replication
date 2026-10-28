@@ -6,3 +6,13 @@
 2026-10-28T22:00:34 epoch 40/150 loss 2.034 val 0.378 best_val 0.533@33
 2026-10-28T22:00:58 epoch 50/150 loss 1.598 val 0.756 best_val 0.756@50
 2026-10-28T22:01:21 epoch 60/150 loss 1.508 val 0.711 best_val 0.800@58
+2026-10-28T22:01:46 epoch 70/150 loss 1.313 val 0.867 best_val 0.889@69
+2026-10-28T22:02:08 epoch 80/150 loss 1.171 val 0.822 best_val 0.911@74
+2026-10-28T22:02:31 epoch 90/150 loss 1.100 val 0.878 best_val 0.922@84
+2026-10-28T22:02:53 epoch 100/150 loss 0.958 val 0.911 best_val 0.967@97
+2026-10-28T22:03:15 epoch 110/150 loss 0.876 val 0.944 best_val 0.967@97
+2026-10-28T22:03:38 epoch 120/150 loss 0.830 val 0.922 best_val 0.967@97
+2026-10-28T22:04:00 epoch 130/150 loss 0.834 val 0.956 best_val 0.967@97
+2026-10-28T22:04:22 epoch 140/150 loss 0.819 val 0.944 best_val 0.967@97
+2026-10-28T22:04:44 epoch 150/150 loss 0.789 val 0.956 best_val 0.967@97
+2026-10-28T22:04:46 RESULT train=phone test=zoom split=random seed=0 best_epoch=97 val=0.9667 test=0.0456
