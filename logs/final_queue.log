@@ -15,3 +15,5 @@
 2026-10-28T22:15:42 START phone phone 1 ordered
 2026-10-28T22:21:17 RESULT train=phone test=phone split=ordered seed=1 best_epoch=118 val=0.8889 test=0.8333
 2026-10-28T22:21:18 START zoom zoom 1 ordered
+2026-10-28T22:26:21 RESULT train=zoom test=zoom split=ordered seed=1 best_epoch=129 val=0.9722 test=0.8796
+2026-10-28T22:26:22 ALL DONE
