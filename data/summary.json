@@ -45,10 +45,16 @@
     "acc": 0.8999999761581421,
     "best_epoch": 98,
     "val": 0.9222221970558167
+   },
+   {
+    "seed": 2,
+    "acc": 0.8888888955116272,
+    "best_epoch": 86,
+    "val": 0.9666666388511658
    }
   ],
-  "mean": 0.9222221970558167,
-  "lo": 0.8999999761581421,
+  "mean": 0.9111110965410868,
+  "lo": 0.8888888955116272,
   "hi": 0.9444444179534912,
   "n": 90,
   "epochs": 150
@@ -69,6 +75,60 @@
   "lo": 0.8518518805503845,
   "hi": 0.8518518805503845,
   "n": 108,
+  "epochs": 150
+ },
+ {
+  "title": "Zoom, early vs late presses",
+  "sub": "Train on presses 1-20 of each key, test on presses 23-25",
+  "claim": null,
+  "runs": [
+   {
+    "seed": 0,
+    "acc": 0.8333333134651184,
+    "best_epoch": 80,
+    "val": 0.9722222089767456
+   }
+  ],
+  "mean": 0.8333333134651184,
+  "lo": 0.8333333134651184,
+  "hi": 0.8333333134651184,
+  "n": 108,
+  "epochs": 150
+ },
+ {
+  "title": "Train on phone, test on Zoom",
+  "sub": "Every Zoom stroke is unseen; different microphone and sample rate",
+  "claim": null,
+  "runs": [
+   {
+    "seed": 0,
+    "acc": 0.04555555433034897,
+    "best_epoch": 97,
+    "val": 0.9666666388511658
+   }
+  ],
+  "mean": 0.04555555433034897,
+  "lo": 0.04555555433034897,
+  "hi": 0.04555555433034897,
+  "n": 900,
+  "epochs": 150
+ },
+ {
+  "title": "Train on Zoom, test on phone",
+  "sub": "Every phone stroke is unseen",
+  "claim": null,
+  "runs": [
+   {
+    "seed": 0,
+    "acc": 0.04444444552063942,
+    "best_epoch": 109,
+    "val": 0.9444444179534912
+   }
+  ],
+  "mean": 0.04444444552063942,
+  "lo": 0.04444444552063942,
+  "hi": 0.04444444552063942,
+  "n": 900,
   "epochs": 150
  }
 ]
