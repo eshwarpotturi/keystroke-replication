@@ -12,3 +12,7 @@
 2026-10-28T22:19:27 epoch 100/150 loss 0.882 val 0.833 best_val 0.875@91
 2026-10-28T22:19:48 epoch 110/150 loss 0.859 val 0.819 best_val 0.875@91
 2026-10-28T22:20:11 epoch 120/150 loss 0.843 val 0.875 best_val 0.889@118
+2026-10-28T22:20:33 epoch 130/150 loss 0.800 val 0.861 best_val 0.889@118
+2026-10-28T22:20:54 epoch 140/150 loss 0.807 val 0.861 best_val 0.889@118
+2026-10-28T22:21:17 epoch 150/150 loss 0.780 val 0.875 best_val 0.889@118
+2026-10-28T22:21:17 RESULT train=phone test=phone split=ordered seed=1 best_epoch=118 val=0.8889 test=0.8333

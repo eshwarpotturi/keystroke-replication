@@ -1,0 +1,2 @@
+2026-10-28T22:21:19 train zoom test zoom split ordered seed 1: train 720 val 72 test 108
+2026-10-28T22:21:24 epoch 1/150 loss 3.718 val 0.028 best_val 0.028@1
