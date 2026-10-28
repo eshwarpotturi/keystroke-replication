@@ -1,0 +1,2 @@
+2026-10-28T22:32:23 train rpractical test rpractical split random seed 0: train 1430 val 179 test 179
+2026-10-28T22:32:30 epoch 1/80 loss 3.679 val 0.056 best_val 0.056@1
