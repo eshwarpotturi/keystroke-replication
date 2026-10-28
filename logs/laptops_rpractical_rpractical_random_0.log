@@ -1,2 +1,9 @@
 2026-10-28T22:32:23 train rpractical test rpractical split random seed 0: train 1430 val 179 test 179
 2026-10-28T22:32:30 epoch 1/80 loss 3.679 val 0.056 best_val 0.056@1
+2026-10-28T22:33:07 epoch 10/80 loss 3.464 val 0.028 best_val 0.056@1
+2026-10-28T22:33:48 epoch 20/80 loss 3.294 val 0.045 best_val 0.061@11
+2026-10-28T22:34:30 epoch 30/80 loss 3.095 val 0.117 best_val 0.117@30
+2026-10-28T22:35:12 epoch 40/80 loss 2.860 val 0.184 best_val 0.184@36
+2026-10-28T22:35:56 epoch 50/80 loss 2.591 val 0.279 best_val 0.285@48
+2026-10-28T22:36:36 epoch 60/80 loss 2.046 val 0.430 best_val 0.436@57
+2026-10-28T22:37:16 epoch 70/80 loss 1.792 val 0.603 best_val 0.603@70
