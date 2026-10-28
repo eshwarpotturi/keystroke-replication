@@ -1,0 +1,3 @@
+2026-10-28T20:47:07 train phone test phone split random seed 0: train 720 val 90 test 90
+2026-10-28T20:47:12 epoch 1/5 loss 3.767 val 0.022 best_val 0.022@1
+2026-10-28T20:47:21 RESULT train=phone test=phone split=random seed=0 best_epoch=1 val=0.0222 test=0.0000

@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Keystroke Replication</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#14181f;--mute:#566070;--line:#d9dee6;--acc:#1f5fd6;--ok:#157a4a;--warn:#b25a00}
+[data-theme=dark]{--bg:#12161c;--card:#1a2029;--ink:#eef1f5;--mute:#9aa6b6;--line:#2c3541;--acc:#6ea2ff;--ok:#4cc38a;--warn:#f0a24a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:20px/1.45 system-ui,Segoe UI,sans-serif;padding:28px 40px}
+h1{font-size:38px;margin:0 0 6px}p.sub{color:var(--mute);margin:0 0 22px;font-size:21px}
+.top{display:flex;justify-content:space-between;align-items:flex-start}button{font:inherit;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 14px;cursor:pointer}
+.head{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:22px}.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px}
+.tile b{display:block;font-size:44px;line-height:1.1}.tile span{color:var(--mute)}
+.row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin-bottom:12px;cursor:pointer;display:grid;grid-template-columns:1fr 150px 190px 120px;gap:16px;align-items:center}
+.row:hover{border-color:var(--acc)}.row h3{margin:0;font-size:23px}.row small{color:var(--mute);font-size:17px}.num{font-size:34px;font-weight:700;text-align:right}.lab{color:var(--mute);font-size:15px;text-align:right}
+.bar{height:14px;background:var(--line);border-radius:7px;position:relative}.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:var(--acc)}.bar u{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--ink)}
+h2{font-size:26px;margin:28px 0 10px}.note{background:var(--card);border-left:6px solid var(--warn);border-radius:8px;padding:14px 20px;margin:10px 0}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);max-width:760px;width:90%;padding:26px;font-size:20px}dialog::backdrop{background:#0008}
+table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--line);padding:6px 10px;text-align:left}
+</style></head><body>
+<div class="top"><div><h1>Can a phone hear what you type?</h1><p class="sub">A replication of "A Practical Deep Learning-Based Acoustic Side Channel Attack on Keyboards" (Harrison, Toreini, Mehrnezhad, 2023) on the authors' own public recordings.</p></div><button id="th">Dark mode</button></div>
+<div class="head" id="head"></div>
+<h2>Results</h2><p class="sub" style="margin-top:0">Click a row for every run. Bar = our mean; black tick = the paper's figure.</p><div id="rows"></div>
+<h2>How to read this</h2><div id="notes"></div>
+<dialog id="dlg"></dialog>
+<script>
+const D=/*DATA*/null;const pc=x=>(x*100).toFixed(1)+"%";
+const $=s=>document.querySelector(s);
+const by=t=>D.find(r=>r.title.startsWith(t));
+const ph=by("Phone microphone"),zo=by("Zoom call");
+let h="";
+for(const r of [ph,zo]) if(r) h+=`<div class="tile"><b>${pc(r.mean)}</b><span>${r.title}: mean of ${r.runs.length} runs (paper: ${r.claim}%)</span></div>`;
+const strict=D.filter(r=>/early vs late/.test(r.title)),tr=D.filter(r=>/^Train on/.test(r.title));
+if(strict.length) h+=`<div class="tile"><b>${strict.map(r=>pc(r.mean)).join(" / ")}</b><span>Phone, stricter test: early presses train, late presses test</span></div>`;
+else if(tr.length) h+=`<div class="tile"><b>${tr.map(r=>pc(r.mean)).join(" / ")}</b><span>Trained on one device, tested on the other</span></div>`;
+$("#head").innerHTML=h;
+$("#rows").innerHTML=D.map((r,i)=>`<div class="row" data-i="${i}"><div><h3>${r.title}</h3><small>${r.sub}</small></div><div><div class="num">${pc(r.mean)}</div><div class="lab">range ${pc(r.lo)} to ${pc(r.hi)}</div></div><div><div class="bar"><i style="width:${r.mean*100}%"></i>${r.claim?`<u style="left:${r.claim}%"></u>`:""}</div></div><div class="lab" style="text-align:left">${r.runs.length} run${r.runs.length>1?"s":""} · ${r.n} test strokes</div></div>`).join("");
+document.querySelectorAll(".row").forEach(e=>e.onclick=()=>{const r=D[e.dataset.i];$("#dlg").innerHTML=`<h2 style="margin-top:0">${r.title}</h2><p>${r.sub}. Chance is 2.8% (36 keys). Epoch count chosen on the validation split only; the test split was scored once per run.</p><table><tr><th>Seed</th><th>Best epoch</th><th>Validation</th><th>Test</th></tr>${r.runs.map(x=>`<tr><td>${x.seed}</td><td>${x.best_epoch}</td><td>${pc(x.val)}</td><td><b>${pc(x.acc)}</b></td></tr>`).join("")}</table><p><button onclick="dlg.close()">Close</button></p>`;$("#dlg").showModal()});
+$("#notes").innerHTML=/*NOTES*/[].map(n=>`<div class="note">${n}</div>`).join("");
+$("#th").onclick=()=>{const d=document.documentElement;const dk=d.dataset.theme==="dark";d.dataset.theme=dk?"light":"dark";$("#th").textContent=dk?"Dark mode":"Light mode"};
+</script></body></html>

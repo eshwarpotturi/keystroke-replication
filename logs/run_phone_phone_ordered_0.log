@@ -1,0 +1,8 @@
+2026-10-28T21:20:17 train phone test phone split ordered seed 0: train 720 val 72 test 108
+2026-10-28T21:20:32 epoch 1/150 loss 3.753 val 0.028 best_val 0.028@1
+2026-10-28T21:22:01 epoch 10/150 loss 3.496 val 0.042 best_val 0.042@2
+2026-10-28T21:24:39 epoch 20/150 loss 3.108 val 0.069 best_val 0.125@15
+2026-10-28T21:26:45 epoch 30/150 loss 2.509 val 0.319 best_val 0.319@30
+2026-10-28T21:30:27 epoch 40/150 loss 2.132 val 0.208 best_val 0.403@39
+2026-10-28T21:31:35 epoch 50/150 loss 1.708 val 0.597 best_val 0.625@48
+2026-10-28T21:31:59 epoch 60/150 loss 1.464 val 0.319 best_val 0.750@59
