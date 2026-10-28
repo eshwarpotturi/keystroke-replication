@@ -14,3 +14,5 @@
 2026-10-28T21:57:48 epoch 120/150 loss 0.773 val 0.972 best_val 0.972@80
 2026-10-28T21:58:09 epoch 130/150 loss 0.757 val 0.958 best_val 0.972@80
 2026-10-28T21:58:32 epoch 140/150 loss 0.789 val 0.958 best_val 0.972@80
+2026-10-28T21:58:55 epoch 150/150 loss 0.763 val 0.958 best_val 0.972@80
+2026-10-28T21:58:56 RESULT train=zoom test=zoom split=ordered seed=0 best_epoch=80 val=0.9722 test=0.8333
