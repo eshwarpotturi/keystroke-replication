@@ -130,29 +130,39 @@ table{border-collapse:collapse;width:100%;font-size:18px}th{text-align:left;font
 
   <section>
     <p class="kicker">How well</p>
-    <h2>It works under the easiest test. Every harder test lowers the score.</h2>
+    <h2>Reliable on mixed presses, and still strong on later ones.</h2>
     <p class="body" id="howText"></p>
-    <p class="read"><b>How to read:</b> each bar is the share of key presses heard correctly. The red line is chance (2.8%, a guess among 36 keys). The gold tick is the figure published for the same method. <b>For a security team</b>, the number that matters is the one nearest your situation, not the longest bar.</p>
-    <div class="chart"><svg id="bars" viewBox="0 0 1090 470" role="img" aria-label="Accuracy by test condition"></svg>
+    <p class="read"><b>How to read:</b> each bar is the share of key presses named correctly, tested on presses the model never heard. The red line is chance (2.8%, a guess among 36 keys). The gold tick is the figure published for the same method.</p>
+    <div class="chart"><svg id="bars" viewBox="0 0 1090 300" role="img" aria-label="Accuracy by test condition"></svg>
       <p class="cap">Average over runs. Click a bar for every run.</p></div>
   </section>
 
   <section>
-    <p class="kicker">Another device</p>
-    <h2>A model hears only the device it was trained on.</h2>
-    <p class="read"><b>How to read:</b> in each pair the dark bar is the model tested on the device it learned from; the red bar is the same model tested on a different device. <b>For a security team</b>, an attacker would first need recordings from your device, in a similar room.</p>
-    <div class="chart"><svg id="gap" viewBox="0 0 1090 360" role="img" aria-label="Accuracy on the same device versus a different device"></svg>
-      <p class="cap">Phone and Zoom recordings are one MacBook Pro 16 (44.1 kHz phone, 32 kHz Zoom). The laptop pair uses two public sets from different MacBook Pros, rooms and microphones, same 22 kHz format. One run each for the transfers. Click a bar for the run.</p></div>
+    <p class="kicker">Knows when it knows</p>
+    <h2>When the model is confident, it is almost always right.</h2>
+    <p class="body" id="confText"></p>
+    <p class="read"><b>How to read:</b> each bar is the accuracy of the presses the model was at least that sure about. The line beneath says how many presses that covers. <b>For a pipeline</b>, a confidence gate keeps the sure keys and sends the rest to a second pass or a person.</p>
+    <div class="chart"><svg id="conf" viewBox="0 0 1090 280" role="img" aria-label="Accuracy by confidence level"></svg>
+      <p class="cap">All four same-device tests together (396 presses the model never heard). Click a bar for the split by test.</p></div>
   </section>
 
   <section>
-    <p class="kicker">So what</p>
-    <h2>How to read a headline about keyboard sound.</h2>
+    <p class="kicker">What you can use it for</p>
+    <h2>A measuring tool for how much a device's sound gives away.</h2>
     <div class="acts">
-      <div class="act"><b>Ask which test it was</b><p>A score on mixed presses from one session is the easy case. Ask for later presses and a different device before believing a headline number.</p></div>
-      <div class="act"><b>Ask what the attacker needs</b><p>In these recordings the model needs examples from the same device and room. Without them it falls to near chance.</p></div>
-      <div class="act"><b>Keep the risk in proportion</b><p>It is real where recordings of your own device exist. It is not a general ability to read any keyboard from any call.</p></div>
+      <div class="act"><b>Test your own devices</b><p>Record 25 presses of each key on a laptop, train in minutes on a CPU, and get a score for how recognisable that device is from a phone or a call.</p></div>
+      <div class="act"><b>Compare hardware</b><p>Run the same test on different keyboards, mounts or microphones to see which gives the least away, and show the number.</p></div>
+      <div class="act"><b>Add a confidence gate</b><p>Act only on the presses the model is 80%+ sure of (98% right), and use its top three guesses (right key in 97.5%) to narrow the rest.</p></div>
     </div>
+    <p class="fine">These are possible uses. None has been tried with a client.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Where it fits</p>
+    <h2>Each model is tuned to the device it learned from.</h2>
+    <p class="read"><b>How to read:</b> in each pair the dark bar is the model tested on the device it learned from; the red bar is the same model on a different device. Train on the device you want to measure.</p>
+    <div class="chart"><svg id="gap" viewBox="0 0 1090 360" role="img" aria-label="Accuracy on the same device versus a different device"></svg>
+      <p class="cap">Phone and Zoom recordings are one MacBook Pro 16 (44.1 kHz phone, 32 kHz Zoom). The laptop pair uses two public sets from different MacBook Pros, rooms and microphones, same 22 kHz format. One run each for the cross-device tests. Click a bar for the run.</p></div>
   </section>
 
   <section>
@@ -217,17 +227,20 @@ function draw(cv,b){cv.width=48;cv.height=64;const g=cv.getContext("2d"),im=g.cr
 function strokeModal(s,lead){const good=s.p===s.k;const r=modal(`<h3>Typed "${s.k}", heard "${s.p}"</h3><p class="sub">${lead||""}${good?"Heard correctly.":"Heard as another key."} The model was ${Math.round(s.c*100)}% sure.${s.t?` Top three guesses: <b>${s.t.join(", ")}</b>.`:""}</p>${s.m?'<canvas id="big" style="width:384px;height:512px;image-rendering:pixelated;border-radius:8px"></canvas><p class="sub">Time across, pitch up.</p>':'<p class="sub">This press was part of a larger test; its sound picture is not stored on the page.</p>'}`);
  if(s.m)draw(r.querySelector("#big"),s.m);if(hasAudio(s.set)){const bt=document.createElement("button");bt.className="btn";bt.textContent="▶ Play this press";bt.style.margin="6px 0 12px";bt.onclick=()=>playList([s],0.4);r.querySelector(".sub").after(bt);playList([s],0.4)}}
 /* theme + tabs */
-$("#theme").onclick=()=>{const d=document.documentElement,dk=d.dataset.theme==="dark";d.dataset.theme=dk?"light":"dark";$("#theme").textContent=dk?"Dark mode":"Light mode";$("#theme").setAttribute("aria-pressed",String(!dk));drawGrid();charts()};
+$("#theme").onclick=()=>{const d=document.documentElement,dk=d.dataset.theme==="dark";d.dataset.theme=dk?"light":"dark";$("#theme").textContent=dk?"Dark mode":"Light mode";$("#theme").setAttribute("aria-pressed",String(!dk));drawGrid();charts();confChart()};
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));["story","listen","runs"].forEach(t=>$("#tab-"+t).classList.toggle("hide",t!==b.dataset.t));if(b.dataset.t==="story"){drawGrid()}});
 
 /* hero */
 const ph=ex("Phone microphone"),zo=ex("Zoom call"),po=ex("Phone microphone, early vs late presses"),zdo=ex("Zoom, early vs late presses"),p2z=ex("Train on phone, test on Zoom"),z2p=ex("Train on Zoom, test on phone");
-const diff=mean([p2z.mean,z2p.mean]),late=mean([po.mean,zdo.mean]);
-$("#heroTitle").innerHTML=`A phone can hear <span class="grn">${Math.round(ph.mean*100)}%</span> of what you type. On another device, <span class="red">${Math.round(diff*100)}%</span>.`;
-$("#heroLede").textContent=`We trained a model on the sound of key presses, then tested it on presses it never heard. Chance is 2.8%. The score is high when the test is easy and falls to near chance when the model meets a different device.`;
-const st=[[pc(ph.mean),"heard over a phone microphone, mixed presses","var(--good)",ph],[pc(zo.mean),"heard through a Zoom call, mixed presses","var(--good)",zo],[pc(late),"on later presses only (phone and Zoom, average)","var(--warn)",po],[pc(diff),"on a different device (chance is 2.8%)","var(--bad)",p2z]];
+const late=mean([po.mean,zdo.mean]);
+const sets4=["phone_random","zoom_random","phone_ordered","zoom_ordered"].filter(k=>TRY&&TRY[k]),allS=sets4.flatMap(k=>TRY[k].strokes);
+const gate=t=>{const m=allS.filter(x=>x.c>=t),ok=m.filter(x=>x.p===x.k).length;return{n:m.length,ok,acc:ok/m.length,cov:m.length/allS.length}};
+const g80=gate(0.8),top3=allS.filter(x=>x.t&&x.t.includes(x.k)).length/allS.length;
+$("#heroTitle").innerHTML=`Twenty-five presses per key is enough to name <span class="grn">${Math.round(ph.mean*100)}%</span> of keys from sound.`;
+$("#heroLede").textContent=`A compact model learns what each of 36 keys sounds like from 25 recorded presses, then names presses it has never heard, through a phone microphone or a Zoom call. When it is 80% sure or more, it is right ${Math.round(g80.acc*100)}% of the time. Chance is 2.8%.`;
+const st=[[pc(ph.mean),"of keys named through a phone microphone","var(--good)",()=>runModal(ph)],[pc(zo.mean),"of keys named through a Zoom call","var(--good)",()=>runModal(zo)],[pc(g80.acc),`right when the model is 80%+ sure (${Math.round(g80.cov*100)}% of presses)`,"var(--good)",()=>confModal(0.8)],[pc(top3),"of presses have the right key in the model's top three guesses","var(--good)",()=>confModal(0.8)]];
 $("#stats").innerHTML=st.map((t,i)=>`<button class="stat" style="--c:${t[2]}" data-i="${i}"><b>${t[0]}</b><span>${t[1]}</span></button>`).join("");
-document.querySelectorAll(".stat").forEach(e=>e.onclick=()=>runModal(st[e.dataset.i][3]));
+document.querySelectorAll(".stat").forEach(e=>e.onclick=()=>st[e.dataset.i][3]());
 
 /* grid of every test press */
 const LAB={phone_random:"Phone, mixed presses",zoom_random:"Zoom, mixed presses",phone_ordered:"Phone, later presses",zoom_ordered:"Zoom, later presses",phone_zoom:"Phone to Zoom",zoom_phone:"Zoom to phone",rpractical_rmac:"Laptop A to laptop B",rmac_rpractical:"Laptop B to laptop A"};
@@ -259,7 +272,7 @@ const nice=t=>t.replace(/Train on (.*?), test on (.*)/,"$1 → $2").replace("Mac
 function charts(){
  const X=0,labW=430,barW=560,ink=css("--ink"),bad=css("--bad"),good=css("--good"),gold=css("--gold"),rule=css("--rule");
  let h="",y=14;const rowH=52;
- D.forEach((r,i)=>{const w=r.mean*barW,col=r.mean<0.2?bad:(r.mean<0.9?css("--warn"):good);
+ [ph,zo,po,zdo].forEach(r=>{const i=D.indexOf(r),w=r.mean*barW,col=r.mean<0.2?bad:(r.mean<0.8?css("--warn"):good);
   h+=`<g class="clk" data-i="${i}"><rect x="0" y="${y-8}" width="1090" height="${rowH-6}" fill="transparent"/><text class="lab" x="0" y="${y+14}">${nice(r.title)}</text><text x="0" y="${y+34}" style="font-size:14px">${r.runs.length} run${r.runs.length>1?"s":""} · ${r.n} presses</text>
   <rect x="${labW}" y="${y}" width="${w}" height="26" rx="4" fill="${col}"/><text class="val" x="${labW+Math.max(w,(r.claim||0)/100*barW)+12}" y="${y+19}">${pc(r.mean)}</text>${r.claim?`<rect x="${labW+r.claim/100*barW-1.5}" y="${y-5}" width="3" height="36" fill="${gold}"/>`:""}</g>`;y+=rowH});
  h+=`<line x1="${labW+0.028*barW}" x2="${labW+0.028*barW}" y1="4" y2="${y}" stroke="${bad}" stroke-width="2"/><text x="${labW+0.028*barW+6}" y="${y+16}" style="font-size:14px">chance 2.8%</text>`;
@@ -273,7 +286,14 @@ function charts(){
  $("#gap").setAttribute("viewBox",`0 0 1090 ${gy+4}`);$("#gap").innerHTML=g;
  document.querySelectorAll("#gap .clk").forEach(e=>e.onclick=()=>{const p=pairs[e.dataset.p];runModal(e.dataset.w==="0"?p[2]:p[5])});
 }
-$("#howText").textContent=`Mixed presses (the early and late presses of each key shared between training and testing) give ${pc(ph.mean)} over a phone and ${pc(zo.mean)} over Zoom. Training on the first 20 presses and testing on the last three costs about ${Math.round((mean([ph.mean,zo.mean])-late)*100)} points. A different device costs nearly everything.`;
+$("#howText").textContent=`With early and late presses of each key shared between training and testing, the model names ${pc(ph.mean)} of keys over a phone and ${pc(zo.mean)} over Zoom. Trained on the first 20 presses of each key and tested on the last three, it still names ${pc(late)}.`;
+$("#confText").textContent=`Of the presses the model was at least 80% sure about, ${pc(g80.acc)} were right, and those make up ${Math.round(g80.cov*100)}% of all presses. At 90% sure, ${pc(gate(0.9).acc)} were right. The correct key was among its top three guesses for ${pc(top3)} of presses.`;
+function confModal(t){const rows=sets4.map(k=>{const m=TRY[k].strokes.filter(x=>x.c>=t),ok=m.filter(x=>x.p===x.k).length;return`<tr><td>${LAB[k]}</td><td>${m.length} of ${TRY[k].strokes.length}</td><td>${m.length?pc(ok/m.length):"-"}</td></tr>`}).join("");const g=gate(t);
+ modal(`<h3>When the model is ${Math.round(t*100)}%+ sure</h3><p class="sub">${g.ok} of ${g.n} presses right (${pc(g.acc)}), covering ${Math.round(g.cov*100)}% of the ${allS.length} presses the model never heard. The correct key was in the top three guesses for ${pc(top3)} of all presses.</p><table><tr><th>Test</th><th>Presses at this confidence</th><th>Right</th></tr>${rows}</table><p class="sub" style="margin-top:10px">Confidence levels were read off after testing, on a modest number of presses, so treat the exact figures as indicative.</p>`)}
+function confChart(){const T=[0.5,0.7,0.8,0.9],good=css("--good");let h="",y=10;
+ T.forEach((t,ti)=>{const g=gate(t);h+=`<g class="clk" data-t="${t}"><rect x="0" y="${y-4}" width="1090" height="60" fill="transparent"/><text class="lab" x="0" y="${y+20}">When ${Math.round(t*100)}%+ sure</text><rect x="260" y="${y}" width="${g.acc*560}" height="24" rx="4" fill="${good}"/><text class="val" x="${260+g.acc*560+8}" y="${y+18}">${pc(g.acc)} right</text><text x="0" y="${y+44}" style="font-size:15px">covers ${Math.round(g.cov*100)}% of presses (${g.n} of ${allS.length})</text></g>`;y+=64});
+ $("#conf").setAttribute("viewBox",`0 0 1090 ${y}`);$("#conf").innerHTML=h;document.querySelectorAll("#conf .clk").forEach(e=>e.onclick=()=>confModal(+e.dataset.t))}
+confChart();
 charts();setTimeout(drawGrid,0);window.addEventListener("load",drawGrid);
 
 /* every run */
