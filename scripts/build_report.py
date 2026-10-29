@@ -42,4 +42,4 @@ notes.append("<b>Limits.</b> Recordings are one person, one laptop, one room, so
 head="A phone can hear what you type, but only if the attacker has first recorded your own keyboard on the same device."
 if p2z and z2p and pod: head=f"A phone can hear what you type ({f(ph['mean'])}), but only under the easiest conditions: it drops to {f(pod['mean'])} on later presses and to about {f((p2z['mean']+z2p['mean'])/2)} when the model has not heard your device."
 html=open("scripts/template.html").read().replace("/*HEAD*/",head).replace("/*DATA*/null",json.dumps(rows)).replace("/*NOTES*/[]",json.dumps(notes)).replace("/*TRY*/null",open("data/try.json").read() if os.path.exists("data/try.json") else "null")
-os.makedirs("docs",exist_ok=True); open("docs/index.html","w").write(html); open("index.html","w").write(html); print("wrote docs/index.html and index.html")
+os.makedirs("docs",exist_ok=True); open("docs/index.html","w").write(html); open("index.html","w").write(html); import shutil; shutil.copytree("assets","docs/assets",dirs_exist_ok=True); print("wrote docs/index.html and index.html")

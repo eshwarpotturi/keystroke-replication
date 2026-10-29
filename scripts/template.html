@@ -171,10 +171,10 @@ table{border-collapse:collapse;width:100%;font-size:18px}th{text-align:left;font
   <section class="hero">
     <p class="kicker">Listen to a word</p>
     <h2>Type something. See what the phone writes down.</h2>
-    <p class="body">Each key plays a press the model never heard in training. Letters a to z and digits 0 to 9.</p>
+    <p class="body">Press Listen to hear the real recording of each key press, then see what the model made of it. Every press is one the model never heard in training. Letters a to z and digits 0 to 9. Turn your sound on.</p>
     <div class="tool">
       <div class="chips" id="chipsDev"></div>
-      <div class="ctl"><input id="word" value="password1" maxlength="14" aria-label="word"><button class="btn" id="go">Listen</button></div>
+      <div class="ctl"><input id="word" value="password1" maxlength="14" aria-label="word"><button class="btn" id="go">▶ Listen</button><button class="btn" id="playw" style="background:transparent;color:var(--ink)">Play again</button></div>
       <div class="legend"><span><i style="background:var(--good)"></i>heard correctly</span><span><i style="background:var(--bad)"></i>heard as another key</span></div>
       <div id="cells" class="cells"></div><div id="sum"></div>
       <p class="hint">Click a key for its sound picture. Press Listen again for different presses.</p>
@@ -196,6 +196,14 @@ table{border-collapse:collapse;width:100%;font-size:18px}th{text-align:left;font
 <div id="modalRoot"></div><div id="tip" class="tip hide"></div>
 <script>
 const D=/*DATA*/null, TRY=/*TRY*/null, NOTES=/*NOTES*/[];
+if(TRY)Object.keys(TRY).forEach(k=>TRY[k].strokes.forEach((s,i)=>{s.i=i;s.set=k}));
+/* real audio of each held-out press (assets/audio_<set>.json, 16 kHz), fetched on first use */
+let AC=null;const AU={};window.playedCount=0;
+const hasAudio=k=>/^(phone|zoom)_(random|ordered)$/.test(k);
+function getAudio(k){if(!AU[k])AU[k]=fetch("assets/audio_"+k+".json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>j.a.map(b=>{const t=atob(b),m=t.length/2,f=new Float32Array(m);for(let i=0;i<m;i++){let v=t.charCodeAt(2*i)|(t.charCodeAt(2*i+1)<<8);if(v>32767)v-=65536;f[i]=v/32768}return{f,sr:j.sr}})).catch(()=>null);return AU[k]}
+async function playList(list,gap){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();let t=0;
+ for(const s of list){if(!s||!hasAudio(s.set))continue;const A=await getAudio(s.set);if(!A)continue;const a=A[s.i];const b=AC.createBuffer(1,a.f.length,a.sr);b.copyToChannel(a.f,0);
+  const src=AC.createBufferSource();src.buffer=b;src.connect(AC.destination);t=Math.max(t,AC.currentTime+0.05);src.start(t);window.playedCount++;t+=gap}}
 const $=s=>document.querySelector(s),pc=x=>(x*100).toFixed(1)+"%",ex=t=>D.find(r=>r.title===t),mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function modal(html){const r=$("#modalRoot");r.innerHTML=`<div class="shade"><div class="modal" role="dialog" aria-modal="true"><button class="close" aria-label="Close">×</button>${html}</div></div>`;
@@ -207,7 +215,7 @@ const u8=b=>{const s=atob(b),a=new Uint8Array(s.length);for(let i=0;i<s.length;i
 function draw(cv,b){cv.width=48;cv.height=64;const g=cv.getContext("2d"),im=g.createImageData(48,64),a=u8(b);
  for(let r=0;r<64;r++)for(let c=0;c<48;c++){const v=a[r*48+c]/255,o=((63-r)*48+c)*4;im.data[o]=Math.round(255*Math.min(1,v*1.6));im.data[o+1]=Math.round(220*v*v);im.data[o+2]=Math.round(120*(1-v)+40);im.data[o+3]=255}g.putImageData(im,0,0)}
 function strokeModal(s,lead){const good=s.p===s.k;const r=modal(`<h3>Typed "${s.k}", heard "${s.p}"</h3><p class="sub">${lead||""}${good?"Heard correctly.":"Heard as another key."} The model was ${Math.round(s.c*100)}% sure.${s.t?` Top three guesses: <b>${s.t.join(", ")}</b>.`:""}</p>${s.m?'<canvas id="big" style="width:384px;height:512px;image-rendering:pixelated;border-radius:8px"></canvas><p class="sub">Time across, pitch up.</p>':'<p class="sub">This press was part of a larger test; its sound picture is not stored on the page.</p>'}`);
- if(s.m)draw(r.querySelector("#big"),s.m)}
+ if(s.m)draw(r.querySelector("#big"),s.m);if(hasAudio(s.set)){const bt=document.createElement("button");bt.className="btn";bt.textContent="▶ Play this press";bt.style.margin="6px 0 12px";bt.onclick=()=>playList([s],0.4);r.querySelector(".sub").after(bt);playList([s],0.4)}}
 /* theme + tabs */
 $("#theme").onclick=()=>{const d=document.documentElement,dk=d.dataset.theme==="dark";d.dataset.theme=dk?"light":"dark";$("#theme").textContent=dk?"Dark mode":"Light mode";$("#theme").setAttribute("aria-pressed",String(!dk));drawGrid();charts()};
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));["story","listen","runs"].forEach(t=>$("#tab-"+t).classList.toggle("hide",t!==b.dataset.t));if(b.dataset.t==="story"){drawGrid()}});
@@ -243,7 +251,7 @@ function example(){const S=TRY&&TRY.phone_random;if(!S)return;const w="password1
  $("#case").innerHTML=`<div class="form"><div class="ft">Typed on the laptop</div><div class="typed">${pick.map(s=>s.k).join("")}</div><div>The first unseen press of each key, ${pick.length} in all</div></div><div class="vs">vs</div>
  <div class="xray"><div class="ft">Heard by the phone</div><div class="keys">${pick.map((s,i)=>`<div class="k" data-i="${i}"><div class="a">${s.k}</div><canvas></canvas><div class="b ${s.p===s.k?"ok":"no"}">${s.p}</div></div>`).join("")}</div></div>`;
  document.querySelectorAll("#case .k").forEach((e,i)=>{draw(e.querySelector("canvas"),pick[i].m);e.onclick=()=>strokeModal(pick[i],"Phone, mixed presses. ")});
- $("#case").insertAdjacentHTML("afterend",`<div class="verdict ${ok>=pick.length-1?"g":""}"><b>${ok} of ${pick.length} keys heard correctly.</b> The phone wrote "${pick.map(s=>s.p).join("")}".</div>`)}
+ $("#case").insertAdjacentHTML("afterend",`<div class="verdict ${ok>=pick.length-1?"g":""}"><b>${ok} of ${pick.length} keys heard correctly.</b> The phone wrote "${pick.map(s=>s.p).join("")}". <button class="btn" id="exPlay" style="margin-left:14px">▶ Hear the presses</button></div>`);$("#exPlay").onclick=()=>playList(pick,0.5)}
 example();
 
 /* charts */
@@ -278,15 +286,16 @@ let dev="phone",sp="random";
 const dopts=[["phone","random","Phone, mixed presses"],["zoom","random","Zoom, mixed presses"],["phone","ordered","Phone, later presses"],["zoom","ordered","Zoom, later presses"]].filter(o=>TRY&&TRY[o[0]+"_"+o[1]]);
 $("#chipsDev").innerHTML=dopts.map((o,i)=>`<button data-i="${i}" aria-pressed="${i===0}">${o[2]}</button>`).join("");
 document.querySelectorAll("#chipsDev button").forEach(b=>b.onclick=()=>{const o=dopts[b.dataset.i];dev=o[0];sp=o[1];document.querySelectorAll("#chipsDev button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));listen()});
-function listen(){const S=TRY&&TRY[dev+"_"+sp],box=$("#cells"),sum=$("#sum");box.innerHTML="";if(!S){sum.textContent="No data for this set-up.";return}
- const w=[...$("#word").value.toLowerCase()].filter(c=>/[a-z0-9]/.test(c));let okc=0,n=0,miss=0,heard="";
+function listen(play){const S=TRY&&TRY[dev+"_"+sp],box=$("#cells"),sum=$("#sum");box.innerHTML="";if(!S){sum.textContent="No data for this set-up.";return}
+ const w=[...$("#word").value.toLowerCase()].filter(c=>/[a-z0-9]/.test(c));let okc=0,n=0,miss=0,heard="";const picked=[];
  w.forEach(ch=>{const c=S.strokes.filter(s=>s.k===ch),d=document.createElement("div");d.className="cell";
   if(!c.length){miss++;heard+="_";d.innerHTML=`<div class="t">${ch}</div><small>no unseen press of this key</small>`;box.appendChild(d);return}
-  const s=c[Math.floor(Math.random()*c.length)];n++;const good=s.p===ch;if(good)okc++;heard+=s.p;
+  const s=c[Math.floor(Math.random()*c.length)];picked.push(s);n++;const good=s.p===ch;if(good)okc++;heard+=s.p;
   d.innerHTML=`<div class="t">${ch}</div><canvas></canvas><div class="h" style="color:${good?"var(--good)":"var(--bad)"}">${s.p}</div><small>${Math.round(s.c*100)}% sure</small>`;draw(d.querySelector("canvas"),s.m);
   d.onclick=()=>strokeModal(s,"");box.appendChild(d)});
+ window.lastPicked=picked;if(play)playList(picked,0.5);
  sum.innerHTML=n?`Typed <b>${w.join("")}</b> &rarr; heard <b>${heard}</b> &mdash; ${okc} of ${n} keys right (${Math.round(100*okc/n)}%).${miss?` ${miss} key(s) skipped.`:""}`:"Type some letters or digits."}
-$("#go").onclick=listen;$("#word").onkeydown=e=>{if(e.key==="Enter")listen()};listen();
+$("#go").onclick=()=>listen(true);$("#word").onkeydown=e=>{if(e.key==="Enter")listen(true)};$("#playw").onclick=()=>playList(window.lastPicked||[],0.5);listen();
 </script>
 </body>
 </html>
