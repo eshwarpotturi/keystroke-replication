@@ -100,8 +100,8 @@ async function classifyWindow(windowed) {
   for (let i = 0; i < p.length; i++) p[i] /= sum;
   const keys = live.norm.keys;
   let best = 0; for (let i = 1; i < p.length; i++) if (p[i] > p[best]) best = i;
-  const top3 = [...p.keys()].sort((a, b) => p[b] - p[a]).slice(0, 3).map(i => keys[i]);
-  return { guess: keys[best], conf: p[best], top3 };
+  const ranked = [...p.keys()].sort((a, b) => p[b] - p[a]).map(i => keys[i]);
+  return { guess: keys[best], conf: p[best], top3: ranked.slice(0, 3), top5: ranked.slice(0, 5) };
 }
 
 // Classify one keystroke: raw mic buffer, its sample rate, and the estimated sample index of the press.
