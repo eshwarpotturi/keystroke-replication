@@ -4,7 +4,7 @@
 // until then the panel says so plainly instead of pretending to work.
 import { logMel, prepModelInput, N_FRAMES_USED } from "./mel.js";
 
-const SETS = ["phone", "zoom"]; // which trained, same-device model to load
+const SETS = ["phone", "zoom", "office"]; // which trained, same-device model to load
 const BEFORE_S = 2400 / 44100, AFTER_S = 12000 / 44100; // training window shape, as fractions of 1s (sr-independent)
 const SEARCH_S = 0.15; // how far around the estimated keydown time to search for the real onset
 // a keystroke needs (SEARCH_S + AFTER_S) of audio recorded *after* it before it can be classified;

@@ -348,8 +348,8 @@ $("#go").onclick=()=>listen(true);$("#word").onkeydown=e=>{if(e.key==="Enter")li
 /* live mic tab — wires scripts/live.js (mel.js feature pipeline + onnxruntime-web inference) to the UI */
 import "./live.js";
 const $=s=>document.querySelector(s);
-const SETS=[["phone","Phone mic (beside the laptop)"],["zoom","Laptop mic (as a Zoom call hears it)"]];
-let lsel="zoom",started=false,warmChars=0,warmOk=0;
+const SETS=[["office","This laptop (recorded for the live demo)"],["phone","Phone mic (beside the laptop)"],["zoom","Laptop mic (as a Zoom call hears it)"]];
+let lsel="office",started=false,warmChars=0,warmOk=0;
 $("#liveChips").innerHTML=SETS.map(([k,l])=>`<button data-k="${k}" aria-pressed="${k===lsel}">${l}</button>`).join("");
 document.querySelectorAll("#liveChips button").forEach(b=>b.onclick=()=>{if(started)return;lsel=b.dataset.k;document.querySelectorAll("#liveChips button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))});
 

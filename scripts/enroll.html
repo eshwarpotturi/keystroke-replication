@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keystroke Listener — record training data</title>
+<style>
+body{margin:0;background:#12171d;color:#e8edf2;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:grid;place-items:center}
+.wrap{max-width:640px;padding:28px;text-align:center}
+h1{font-size:22px;margin:0 0 6px}
+.sub{color:#8b97a4;font-size:15px;margin-bottom:28px}
+.key{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:120px;font-weight:700;background:#1a2129;border:2px solid #2c3540;border-radius:16px;padding:30px 50px;display:inline-block;min-width:120px}
+.count{font-size:20px;margin-top:14px;color:#b4bfcb}
+.bar{height:8px;background:#232b34;border-radius:4px;margin-top:20px;overflow:hidden}
+.bar i{display:block;height:100%;background:#3ccf7e;width:0%}
+button{font:inherit;font-size:16px;padding:10px 22px;border-radius:99px;border:1px solid #e8edf2;background:#e8edf2;color:#12171d;cursor:pointer;margin:6px}
+button.ghost{background:transparent;color:#e8edf2}
+button:disabled{opacity:.4;cursor:default}
+.status{margin-top:18px;font-size:15px;color:#8b97a4;min-height:24px}
+.hint{font-size:14px;color:#8b97a4;margin-top:24px;max-width:480px;margin-left:auto;margin-right:auto}
+.done{font-size:18px;line-height:1.6}
+code{background:#232b34;padding:2px 7px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Record training presses</h1>
+  <p class="sub" id="sub">Press the key shown, the same number of times as asked, at a normal typing pace. Mistakes are fine &mdash; use Backspace to redo the current key.</p>
+  <div id="pre">
+    <label>Presses per key: <input id="n" type="number" value="20" min="10" max="25" style="width:60px;font-size:16px;padding:4px"></label>
+    <div><button id="start">Start &amp; allow microphone</button></div>
+  </div>
+  <div id="live" style="display:none">
+    <div class="key" id="keyEl">a</div>
+    <div class="count" id="countEl"></div>
+    <div class="bar"><i id="barEl"></i></div>
+    <div class="status" id="statusEl">Listening&hellip;</div>
+    <div><button class="ghost" id="skip">Skip this key</button></div>
+  </div>
+  <div id="doneBox" style="display:none">
+    <div class="done" id="doneMsg"></div>
+    <button id="download">Download the recording</button>
+    <p class="hint">Send the downloaded file back in the chat. It only contains short (~0.3s) snippets around each key press, labelled with which key you pressed &mdash; no other audio.</p>
+  </div>
+  <p class="hint" id="bottomHint">Takes about 10&ndash;15 minutes for 36 keys. Do it somewhere reasonably quiet, same laptop and mic you'll use for the live demo.</p>
+</div>
+<script>
+const KEYS="1234567890qwertyuiopasdfghjklzxcvbnm";
+const BEFORE=2400, AFTER=12000, SEARCH=Math.round(0.15*48000); // sample counts; SEARCH recalculated once we know real sr
+let ctx,stream,proc,gain,sr,chunks=[],active=false;
+let ki=0, need=20, got=0, log=[]; // log: [{ch, idx_in_key, tPerf}]
+
+function setKeyUI(){ $("#keyEl").textContent=KEYS[ki]==="0"?"0":KEYS[ki]; $("#countEl").textContent=`${got} of ${need}`; $("#barEl").style.width=`${Math.round(100*(ki*need+got)/(KEYS.length*need))}%`; }
+const $=s=>document.querySelector(s);
+
+async function start(){
+  need=Math.max(5,Math.min(30,parseInt($("#n").value)||20));
+  ctx=new (window.AudioContext||window.webkitAudioContext)();
+  stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  sr=ctx.sampleRate;
+  const src=ctx.createMediaStreamSource(stream);
+  proc=ctx.createScriptProcessor(4096,1,1);
+  gain=ctx.createGain(); gain.gain.value=0;
+  chunks=[]; active=true;
+  proc.onaudioprocess=e=>{ if(active) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+  src.connect(proc); proc.connect(gain); gain.connect(ctx.destination);
+  t0Perf=performance.now()-ctx.currentTime*1000;
+  $("#pre").style.display="none"; $("#live").style.display="block";
+  ki=0; got=0; log=[]; setKeyUI();
+  window.addEventListener("keydown",onKey);
+}
+let t0Perf=0;
+function onKey(e){
+  if(!active)return;
+  if(e.key==="Backspace"){ if(got>0){got--; log=log.filter(l=>!(l.ch===KEYS[ki]&&l.i===got));} setKeyUI(); e.preventDefault(); return; }
+  if(e.key.length!==1)return;
+  const ch=e.key.toLowerCase();
+  if(ch!==KEYS[ki])return; // only count the target key
+  log.push({ch, i:got, tPerf:performance.now()});
+  got++; setKeyUI();
+  if(got>=need){ ki++; got=0;
+    if(ki>=KEYS.length){ finish(); return; }
+    setKeyUI();
+  }
+}
+$("#skip").onclick=()=>{ ki++; got=0; if(ki>=KEYS.length){finish();return;} setKeyUI(); };
+$("#start").onclick=start;
+
+function fullBuffer(){ const n=chunks.reduce((s,c)=>s+c.length,0); const out=new Float32Array(n); let o=0; for(const c of chunks){out.set(c,o);o+=c.length;} return out; }
+
+function findOnset(buf,centerIdx,searchHalf){
+  const lo=Math.max(0,centerIdx-searchHalf), hi=Math.min(buf.length,centerIdx+searchHalf);
+  const win=256; let best=centerIdx,bestE=-1;
+  for(let i=lo;i+win<hi;i+=8){ let e=0; for(let j=0;j<win;j++)e+=Math.abs(buf[i+j]); if(e>bestE){bestE=e;best=i+(win>>1);} }
+  return best;
+}
+
+async function finish(){
+  active=false; window.removeEventListener("keydown",onKey);
+  try{ proc.disconnect(); gain.disconnect(); }catch{}
+  try{ stream.getTracks().forEach(t=>t.stop()); }catch{}
+  $("#live").style.display="none";
+  const buf=fullBuffer();
+  const searchHalf=Math.round(0.15*sr);
+  const strokeLen=BEFORE+AFTER;
+  const labels=[],pos=[];
+  const pcm=new Int16Array(log.length*strokeLen);
+  let w=0;
+  for(const k of log){
+    const idx=Math.round(((k.tPerf-t0Perf)/1000)*sr);
+    const onset=findOnset(buf,idx,searchHalf);
+    for(let i=0;i<strokeLen;i++){
+      const si=onset-BEFORE+i;
+      const v=si>=0&&si<buf.length?buf[si]:0;
+      pcm[w*strokeLen+i]=Math.max(-32768,Math.min(32767,Math.round(v*32767)));
+    }
+    labels.push(k.ch); pos.push(k.i); w++;
+  }
+  const header=JSON.stringify({sr,strokeLen,before:BEFORE,after:AFTER,n:log.length,labels,pos,keys:KEYS});
+  const headerBytes=new TextEncoder().encode(header);
+  const magic=new TextEncoder().encode("KSTR");
+  const lenBuf=new Uint32Array([headerBytes.length]);
+  const blob=new Blob([magic,new Uint8Array(lenBuf.buffer),headerBytes,new Uint8Array(pcm.buffer)],{type:"application/octet-stream"});
+  const url=URL.createObjectURL(blob);
+  const sizeMB=(blob.size/1e6).toFixed(1);
+  $("#doneMsg").innerHTML=`Recorded <b>${log.length}</b> presses across ${KEYS.length} keys (${sizeMB} MB).`;
+  $("#download").onclick=()=>{ const a=document.createElement("a"); a.href=url; a.download=`enrollment_${Date.now()}.ksd`; a.click(); };
+  $("#doneBox").style.display="block"; $("#bottomHint").style.display="none";
+}
+</script>
+</body>
+</html>

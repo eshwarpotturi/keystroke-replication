@@ -44,11 +44,13 @@ python scripts/build_report.py   # writes index.html
 The page has a third tab, "Live (your mic)": type a passage, then type a
 hidden password, and it guesses the password back from your own microphone,
 live, entirely in the browser (nothing is sent anywhere). It only works on
-the device and mic a model was trained on — see `model/README.md` for how to
-export one; until an export exists, the tab says so rather than pretending
-to work. `scripts/mel.js` is a JS port of the feature pipeline in
-`train.py`'s `mel_fn`, checked against it numerically in
-`scripts/test_mel_js.py`.
+the device and mic a model was trained on. Fastest way to get one: open
+`enroll.html`, press each key ~20 times (10–15 min), it downloads a small
+file — decode it and train with `scripts/decode_enrollment.py` +
+`EXPORT=1 scripts/train.py` (see `model/README.md`). Until an export exists,
+the tab says so rather than pretending to work. `scripts/mel.js` is a JS
+port of the feature pipeline in `train.py`'s `mel_fn`, checked against it
+numerically in `scripts/test_mel_js.py`.
 
 ## Credit
 

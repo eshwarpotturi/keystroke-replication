@@ -4,7 +4,25 @@ Empty until a model is exported. The Live tab reads `model/<set>/model.onnx`,
 `melfb.json` and `norm.json` at runtime; if they're missing it says so on the
 page instead of pretending to work.
 
-## How to produce them
+## Fastest path: record directly for the live demo (no raw dataset needed)
+
+1. Open `scripts/enroll.html` (or the hosted copy, `enroll.html` at the repo
+   root) on the exact laptop/mic you'll demo on. Press Start, allow the mic,
+   and press each key shown ~20 times (10–15 min for all 36 keys).
+2. It downloads a single `.ksd` file (a few MB) — short snippets around each
+   press, nothing else.
+3. Decode it and train:
+   ```
+   python scripts/decode_enrollment.py path/to/enrollment_XXXX.ksd office
+   EXPORT=1 python scripts/train.py office office 0 150 random
+   python scripts/build_report.py
+   ```
+   This produces `model/office/*` and the page's "This laptop" option in the
+   Live tab starts working. Verified end to end (recorder → decode → train →
+   export → in-browser inference) with a short synthetic run before asking
+   you to spend the 10–15 minutes on the real one.
+
+## Alternative: from the original phone/Zoom recordings
 
 ```
 EXPORT=1 python scripts/train.py zoom zoom 0 150 random
