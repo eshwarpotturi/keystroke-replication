@@ -18,3 +18,28 @@
 | Other devices? | Tune it per device; cross-device runs are on the page. |
 
 **Keep accurate:** one person, one laptop, one room; uses are proposals, no client has asked for it.
+
+## Live version (the "Live" tab)
+
+Anand asked to see it live: type ~50 words, then guess a password from the
+sound alone. It runs for real — mic in, model in the browser, nothing sent
+anywhere — but with one honest constraint carried over from the findings
+above: **it only works on the device/mic it was trained on** (accuracy
+collapses to ~4% on a different device). So "a stranger types on an
+untrained laptop and it guesses their password" isn't what this does. What
+it does: run it on the laptop and mic the model was trained on, type the
+passage yourself (or hand it to someone at that same machine), and the
+reveal is real — the model has genuinely never seen that password before.
+
+1. Open the **Live (your mic)** tab, pick the matching device chip, press
+   **Start microphone**, allow the mic.
+2. Type a sentence or two naturally in the warm-up box — each letter gets a
+   live guess with a short (~1s) lag while it waits for the key's own sound
+   to finish recording.
+3. Once the password field appears, type a short password (hidden, not
+   echoed to the screen) and press **Reveal what the mic heard**.
+
+If someone asks why you can't just hand them the keyboard cold: say so
+plainly — same reason a different laptop scores ~4% in "Where it fits" on
+this page. The honest live demo is "it reads me back, on my machine,
+something it was never shown" — which is still the real finding.

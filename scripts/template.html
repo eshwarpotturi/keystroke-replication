@@ -103,7 +103,7 @@ table{border-collapse:collapse;width:100%;font-size:18px}th{text-align:left;font
 <body>
 <div class="col">
   <div class="topbar"><span class="kicker" style="margin:0">Keystroke Listener · An experiment on key-press sound</span><button class="toggle" id="theme" aria-pressed="false">Dark mode</button></div>
-  <div class="tabs" role="tablist"><button role="tab" aria-selected="true" data-t="story">The experiment</button><button role="tab" aria-selected="false" data-t="listen">Listen to a word</button><button role="tab" aria-selected="false" data-t="runs">Every run</button></div>
+  <div class="tabs" role="tablist"><button role="tab" aria-selected="true" data-t="story">The experiment</button><button role="tab" aria-selected="false" data-t="listen">Listen to a word</button><button role="tab" aria-selected="false" data-t="live">Live (your mic)</button><button role="tab" aria-selected="false" data-t="runs">Every run</button></div>
 
 <div id="tab-story">
   <section class="hero">
@@ -192,6 +192,32 @@ table{border-collapse:collapse;width:100%;font-size:18px}th{text-align:left;font
   </section>
 </div>
 
+<div id="tab-live" class="hide">
+  <section class="hero">
+    <p class="kicker">Live, on your own microphone</p>
+    <h2>Type a passage, then type a hidden password. The model reads it from the sound.</h2>
+    <p class="body" id="liveIntro">This runs the real model in your browser on your own typing &mdash; nothing is sent anywhere. It only works on the device and microphone it was trained on (see "Where it fits"); on any other machine it will guess close to chance.</p>
+    <div class="tool" id="liveTool">
+      <div class="chips" id="liveChips"></div>
+      <div class="ctl" style="margin-bottom:6px"><button class="btn" id="liveStart">Start microphone</button><button class="btn" id="liveReset" style="background:transparent;color:var(--ink)">Reset</button><span id="liveStatus" class="hint" style="margin-left:4px"></span></div>
+
+      <div id="liveWarmup" class="hide" style="margin-top:14px">
+        <div class="ft" style="font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Step 1 &middot; warm-up &mdash; type a sentence or two here</div>
+        <textarea id="liveText" rows="3" disabled style="width:100%;font:18px/1.4 var(--sans);padding:10px;border:1px solid var(--rule);border-radius:8px;background:var(--bg);color:var(--ink);margin-top:6px" placeholder="Type a few sentences naturally, like you would an email&hellip;"></textarea>
+        <div id="liveWarmCells" class="cells" style="margin-top:10px"></div>
+        <div id="liveWarmSum" class="hint" style="margin-top:4px"></div>
+      </div>
+
+      <div id="livePwStep" class="hide" style="margin-top:22px">
+        <div class="ft" style="font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Step 2 &middot; now type a short password &mdash; it will not be shown on screen</div>
+        <div class="ctl" style="margin-top:6px"><input id="livePw" type="password" maxlength="16" autocomplete="off" placeholder="type here, hidden" style="width:320px"><button class="btn" id="liveReveal">Reveal what the mic heard</button></div>
+        <div id="liveVerdict" style="margin-top:10px"></div>
+      </div>
+    </div>
+    <p class="fine" id="liveFine">Nothing you type here is sent to a server: the mic audio, the model and the guess all stay in this browser tab.</p>
+  </section>
+</div>
+
 <div id="tab-runs" class="hide">
   <section class="hero">
     <p class="kicker">Every run</p>
@@ -228,7 +254,7 @@ function strokeModal(s,lead){const good=s.p===s.k;const r=modal(`<h3>Typed "${s.
  if(s.m)draw(r.querySelector("#big"),s.m);if(hasAudio(s.set)){const bt=document.createElement("button");bt.className="btn";bt.textContent="▶ Play this press";bt.style.margin="6px 0 12px";bt.onclick=()=>playList([s],0.4);r.querySelector(".sub").after(bt);playList([s],0.4)}}
 /* theme + tabs */
 $("#theme").onclick=()=>{const d=document.documentElement,dk=d.dataset.theme==="dark";d.dataset.theme=dk?"light":"dark";$("#theme").textContent=dk?"Dark mode":"Light mode";$("#theme").setAttribute("aria-pressed",String(!dk));drawGrid();charts();confChart()};
-document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));["story","listen","runs"].forEach(t=>$("#tab-"+t).classList.toggle("hide",t!==b.dataset.t));if(b.dataset.t==="story"){drawGrid()}});
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));["story","listen","live","runs"].forEach(t=>$("#tab-"+t).classList.toggle("hide",t!==b.dataset.t));if(b.dataset.t==="story"){drawGrid()}});
 
 /* hero */
 const ph=ex("Phone microphone"),zo=ex("Zoom call"),po=ex("Phone microphone, early vs late presses"),zdo=ex("Zoom, early vs late presses"),p2z=ex("Train on phone, test on Zoom"),z2p=ex("Train on Zoom, test on phone");
@@ -316,6 +342,76 @@ function listen(play){const S=TRY&&TRY[dev+"_"+sp],box=$("#cells"),sum=$("#sum")
  window.lastPicked=picked;if(play)playList(picked,0.5);
  sum.innerHTML=n?`Typed <b>${w.join("")}</b> &rarr; heard <b>${heard}</b> &mdash; ${okc} of ${n} keys right (${Math.round(100*okc/n)}%).${miss?` ${miss} key(s) skipped.`:""}`:"Type some letters or digits."}
 $("#go").onclick=()=>listen(true);$("#word").onkeydown=e=>{if(e.key==="Enter")listen(true)};$("#playw").onclick=()=>playList(window.lastPicked||[],0.5);listen();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
+<script type="module">
+/* live mic tab — wires scripts/live.js (mel.js feature pipeline + onnxruntime-web inference) to the UI */
+import "./live.js";
+const $=s=>document.querySelector(s);
+const SETS=[["phone","Phone mic (beside the laptop)"],["zoom","Laptop mic (as a Zoom call hears it)"]];
+let lsel="zoom",started=false,warmChars=0,warmOk=0;
+$("#liveChips").innerHTML=SETS.map(([k,l])=>`<button data-k="${k}" aria-pressed="${k===lsel}">${l}</button>`).join("");
+document.querySelectorAll("#liveChips button").forEach(b=>b.onclick=()=>{if(started)return;lsel=b.dataset.k;document.querySelectorAll("#liveChips button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))});
+
+async function begin(){
+  $("#liveStatus").textContent="Loading the model…";
+  try{ await window.KeystrokeLive.init(lsel); }
+  catch(e){ $("#liveStatus").textContent=`No trained model published yet for "${lsel}". This tab needs model/${lsel}/model.onnx (see model/README.md) — the rest of the page works without it.`; return; }
+  try{ await window.KeystrokeLive.startMic(); }
+  catch(e){ $("#liveStatus").textContent="Microphone access was blocked. Allow the mic for this page and press Start again."; return; }
+  started=true; warmChars=0; warmOk=0;
+  $("#liveStatus").textContent="Listening… type below.";
+  $("#liveWarmup").classList.remove("hide"); $("#liveStart").textContent="Listening…"; $("#liveStart").disabled=true;
+  $("#liveText").disabled=false; $("#liveText").focus();
+}
+$("#liveStart").onclick=begin;
+$("#liveReset").onclick=()=>{
+  window.KeystrokeLive.stopMic(); window.KeystrokeLive.reset();
+  started=false; warmChars=0; warmOk=0; renderedWarm=0; pwStartIdx=null;
+  $("#liveStart").textContent="Start microphone"; $("#liveStart").disabled=false;
+  $("#liveStatus").textContent=""; $("#liveText").value=""; $("#liveText").disabled=true; $("#liveWarmCells").innerHTML=""; $("#liveWarmSum").textContent="";
+  $("#liveWarmup").classList.add("hide"); $("#livePwStep").classList.add("hide"); $("#liveVerdict").innerHTML=""; $("#livePw").value="";
+};
+
+// Classification lags ~1s behind typing (a keystroke needs its own trailing audio captured
+// before it can be sliced — see MARGIN_MS in live.js), so we poll for newly-classified keys
+// rather than trying to match one result to one keystroke event.
+let renderedWarm=0, pwStartIdx=null;
+$("#liveText").addEventListener("keydown",e=>{ if(started && e.key.length===1) window.KeystrokeLive.onKeydown(e.key.toLowerCase()); });
+$("#livePw").addEventListener("keydown",e=>{
+  if(!started||e.key.length!==1)return;
+  if(pwStartIdx===null)pwStartIdx=window.KeystrokeLive.keyLogLength();
+  window.KeystrokeLive.onKeydown(e.key.toLowerCase());
+});
+setInterval(async()=>{
+  if(!started)return;
+  const results=await window.KeystrokeLive.classifyAll();
+  const upto=pwStartIdx===null?results.length:Math.min(results.length,pwStartIdx);
+  for(;renderedWarm<upto;renderedWarm++){
+    const r=results[renderedWarm], good=r.guess===r.ch;
+    warmChars++; if(good)warmOk++;
+    const d=document.createElement("div"); d.className="cell";
+    d.innerHTML=`<div class="t">${r.ch}</div><div class="h" style="color:${good?"var(--good)":"var(--bad)"}">${r.guess}</div><small>${Math.round(r.conf*100)}% sure</small>`;
+    $("#liveWarmCells").appendChild(d);
+    while($("#liveWarmCells").children.length>24)$("#liveWarmCells").removeChild($("#liveWarmCells").firstChild);
+  }
+  if(warmChars)$("#liveWarmSum").textContent=`${warmOk} of ${warmChars} keys heard correctly so far (${Math.round(100*warmOk/warmChars)}%).`;
+  if(warmChars>=15 && $("#livePwStep").classList.contains("hide")){ $("#livePwStep").classList.remove("hide"); $("#livePw").focus(); }
+},400);
+$("#liveReveal").onclick=async()=>{
+  const typed=$("#livePw").value;
+  if(!typed){$("#liveVerdict").innerHTML=`<div class="verdict">Type a password first.</div>`;return}
+  if(pwStartIdx===null){$("#liveVerdict").innerHTML=`<div class="verdict">No keystrokes logged for the password field — click into it and type again.</div>`;return}
+  $("#liveVerdict").innerHTML=`<div class="hint">Listening back… (waiting for the last keystroke's audio to finish recording)</div>`;
+  const pwChars=[...typed.toLowerCase()].filter(c=>/[a-z0-9]/.test(c));
+  const wantLen=pwStartIdx+pwChars.length;
+  let results=await window.KeystrokeLive.classifyAll(), tries=0;
+  while(results.length<wantLen && tries<30){ await new Promise(r=>setTimeout(r,300)); results=await window.KeystrokeLive.classifyAll(); tries++; }
+  const tail=results.slice(pwStartIdx,wantLen);
+  const heard=tail.map(r=>r.guess).join("");
+  const ok=tail.filter((r,i)=>r.guess===pwChars[i]).length;
+  $("#liveVerdict").innerHTML=`<div class="verdict ${ok===pwChars.length?"g":""}"><b>Typed:</b> ${pwChars.join("")} &nbsp; <b>Heard:</b> ${heard} &nbsp; (${ok} of ${pwChars.length} right)</div>`;
+};
 </script>
 </body>
 </html>

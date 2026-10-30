@@ -1,0 +1,145 @@
+// Live microphone demo: type a warm-up passage with live per-letter guesses, then type a hidden
+// password and reveal what the model heard. Runs entirely client-side (mic audio never leaves
+// the page). Requires model/<set>/model.onnx + melfb.json + norm.json to exist (see model/README.md);
+// until then the panel says so plainly instead of pretending to work.
+import { logMel, prepModelInput, N_FRAMES_USED } from "./mel.js";
+
+const SETS = ["phone", "zoom"]; // which trained, same-device model to load
+const BEFORE_S = 2400 / 44100, AFTER_S = 12000 / 44100; // training window shape, as fractions of 1s (sr-independent)
+const SEARCH_S = 0.15; // how far around the estimated keydown time to search for the real onset
+// a keystroke needs (SEARCH_S + AFTER_S) of audio recorded *after* it before it can be classified;
+// MARGIN_MS is that, plus slack for ScriptProcessor buffering lag, so classifyAll() never slices past
+// what's actually been captured (which would silently zero-pad the tail of the window).
+const MARGIN_MS = Math.ceil((SEARCH_S + AFTER_S) * 1000) + 250;
+
+let live = {
+  set: null, sess: null, melfb: null, norm: null,
+  ctx: null, stream: null, proc: null, gain: null,
+  chunks: [], t0Perf: 0, sr: 0,
+  keyLog: [], // {ch, tPerf}
+  classified: [], // cache, parallel to keyLog — classifyAll() only processes new entries
+  active: false,
+};
+
+async function loadModel(set) {
+  const base = `model/${set}`;
+  const [melfbR, normR] = await Promise.all([fetch(`${base}/melfb.json`), fetch(`${base}/norm.json`)]);
+  if (!melfbR.ok || !normR.ok) throw new Error("no exported model for " + set);
+  const melfbJ = await melfbR.json(), norm = await normR.json();
+  const sess = await ort.InferenceSession.create(`${base}/model.onnx`, { executionProviders: ["wasm"] });
+  return { sess, melfb: Float32Array.from(melfbJ.melfb), norm };
+}
+
+async function startMic() {
+  live.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  live.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  const src = live.ctx.createMediaStreamSource(live.stream);
+  // ScriptProcessorNode is deprecated but simplest for a short-lived demo page; buffer size 4096.
+  live.proc = live.ctx.createScriptProcessor(4096, 1, 1);
+  live.gain = live.ctx.createGain(); live.gain.gain.value = 0; // keep graph alive, no audible loopback
+  live.sr = live.ctx.sampleRate;
+  live.chunks = []; live.keyLog = [];
+  // anchor: perf time that corresponds to ctx.currentTime===0 for this context
+  live.t0Perf = performance.now() - live.ctx.currentTime * 1000;
+  live.proc.onaudioprocess = (e) => { if (live.active) live.chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+  src.connect(live.proc); live.proc.connect(live.gain); live.gain.connect(live.ctx.destination);
+  live.active = true;
+}
+
+function stopMic() {
+  live.active = false;
+  try { live.proc && live.proc.disconnect(); live.gain && live.gain.disconnect(); } catch {}
+  try { live.stream && live.stream.getTracks().forEach(t => t.stop()); } catch {}
+}
+
+function fullBuffer() {
+  const n = live.chunks.reduce((s, c) => s + c.length, 0);
+  const out = new Float32Array(n); let o = 0;
+  for (const c of live.chunks) { out.set(c, o); o += c.length; }
+  return out;
+}
+
+// Energy-peak onset search (same idea as scripts/isolate.py), restricted to a small window
+// around the keydown-estimated sample index instead of scanning the whole recording.
+function findOnset(buf, sr, centerIdx, searchS) {
+  const half = Math.round(searchS * sr);
+  const lo = Math.max(0, centerIdx - half), hi = Math.min(buf.length, centerIdx + half);
+  const win = 256; // short-time energy window
+  let best = centerIdx, bestE = -1;
+  for (let i = lo; i + win < hi; i += 8) {
+    let e = 0; for (let j = 0; j < win; j++) e += Math.abs(buf[i + j]);
+    if (e > bestE) { bestE = e; best = i + (win >> 1); }
+  }
+  return best;
+}
+
+// Resample a short slice to targetSr using OfflineAudioContext (cheap: slices are ~0.3s).
+async function resampleSlice(float32, srcSr, targetSr) {
+  if (srcSr === targetSr) return float32;
+  const off = new OfflineAudioContext(1, Math.ceil(float32.length * targetSr / srcSr), targetSr);
+  const buf = off.createBuffer(1, float32.length, srcSr);
+  buf.copyToChannel(float32, 0);
+  const src = off.createBufferSource(); src.buffer = buf; src.connect(off.destination); src.start();
+  const rendered = await off.startRendering();
+  return rendered.getChannelData(0).slice();
+}
+
+// Classify one keystroke: raw mic buffer, its sample rate, and the estimated sample index of the press.
+async function classifyStroke(buf, micSr, idxMic) {
+  const trainSr = live.norm.sr;
+  // pull a generous raw slice around the estimate (search window + training window, in mic-sr samples)
+  const needBefore = Math.round((SEARCH_S + BEFORE_S) * micSr), needAfter = Math.round((SEARCH_S + AFTER_S) * micSr);
+  const lo = Math.max(0, idxMic - needBefore), hi = Math.min(buf.length, idxMic + needAfter);
+  const raw = buf.slice(lo, hi);
+  const resampled = await resampleSlice(raw, micSr, trainSr);
+  const localCenter = Math.round((idxMic - lo) * trainSr / micSr);
+  const onset = findOnset(resampled, trainSr, localCenter, SEARCH_S);
+  const before = Math.round(BEFORE_S * trainSr), after = Math.round(AFTER_S * trainSr);
+  const windowed = new Float64Array(before + after);
+  for (let i = 0; i < before + after; i++) {
+    const si = onset - before + i;
+    windowed[i] = si >= 0 && si < resampled.length ? resampled[si] : 0;
+  }
+  const { mel, nFrames } = logMel(windowed, live.melfb);
+  const input = prepModelInput(mel, nFrames, live.norm.mu, live.norm.sd);
+  const tensor = new ort.Tensor("float32", input, [1, 1, 64, N_FRAMES_USED]);
+  const out = await live.sess.run({ mel: tensor });
+  const logits = out.logits.data;
+  // softmax
+  let mx = -Infinity; for (const v of logits) mx = Math.max(mx, v);
+  let sum = 0; const p = new Float32Array(logits.length);
+  for (let i = 0; i < logits.length; i++) { p[i] = Math.exp(logits[i] - mx); sum += p[i]; }
+  for (let i = 0; i < p.length; i++) p[i] /= sum;
+  const keys = live.norm.keys;
+  let best = 0; for (let i = 1; i < p.length; i++) if (p[i] > p[best]) best = i;
+  const top3 = [...p.keys()].sort((a, b) => p[b] - p[a]).slice(0, 3).map(i => keys[i]);
+  return { guess: keys[best], conf: p[best], top3 };
+}
+
+// Public API used by the page's UI wiring (added in template.html).
+window.KeystrokeLive = {
+  async init(set) {
+    const m = await loadModel(set);
+    live.set = set; live.sess = m.sess; live.melfb = m.melfb; live.norm = m.norm;
+    return m.norm;
+  },
+  startMic,
+  stopMic,
+  onKeydown(ch) { if (live.active) live.keyLog.push({ ch, tPerf: performance.now() }); },
+  // classify only keystrokes not yet classified (cached in live.classified), append, return the
+  // full cumulative array [{ch,guess,conf,top3}] so callers can always read results[results.length-1].
+  async classifyAll() {
+    const buf = fullBuffer(), micSr = live.sr, now = performance.now();
+    for (let i = live.classified.length; i < live.keyLog.length; i++) {
+      const k = live.keyLog[i];
+      if (now - k.tPerf < MARGIN_MS) break; // not enough trailing audio captured yet — try again next call
+      const idx = Math.round(((k.tPerf - live.t0Perf) / 1000) * micSr);
+      try { live.classified.push({ ch: k.ch, ...(await classifyStroke(buf, micSr, idx)) }); }
+      catch (e) { live.classified.push({ ch: k.ch, guess: "?", conf: 0, top3: [] }); }
+    }
+    return live.classified;
+  },
+  reset() { live.chunks = []; live.keyLog = []; live.classified = []; },
+  hasModel(set) { return SETS.includes(set); },
+  keyLogLength() { return live.keyLog.length; },
+};

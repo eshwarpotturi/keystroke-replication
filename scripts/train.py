@@ -3,6 +3,7 @@ Epochs are chosen on the validation split only. The test split is scored once pe
 usage: python train.py <train_set> <test_set> <seed> [epochs] [split]"""
 import sys,time,json,math,random,numpy as np,torch,torch.nn as nn,librosa
 import os; torch.set_num_threads(int(os.environ.get('THREADS','2')))
+KEYS="1234567890qwertyuiopasdfghjklzxcvbnm"  # label index -> key, same order as isolate.py
 def log(*a): print(time.strftime("%Y-%m-%dT%H:%M:%S"),*a,flush=True)
 tr_name,te_name,seed=sys.argv[1],sys.argv[2],int(sys.argv[3]); EPOCHS=int(sys.argv[4]) if len(sys.argv)>4 else 120
 SPLIT=sys.argv[5] if len(sys.argv)>5 else "random"
@@ -90,3 +91,22 @@ with torch.no_grad(): P=torch.softmax(model(norm(Mte)),1)
 np.savez_compressed(f"data/pred_{tr_name}_{te_name}_{SPLIT}_{seed}{os.environ.get('TAG','')}.npz",mel=Mte[:,0].numpy().astype(np.float16),y=yte.numpy(),pred=P.argmax(1).numpy(),conf=P.max(1).values.numpy(),top3=P.topk(3,1).indices.numpy())   # test scored ONCE, with the epoch chosen on validation
 log(f"RESULT train={tr_name} test={te_name} split={SPLIT} seed={seed} best_epoch={best_ep} val={best:.4f} test={test:.4f}")
 json.dump({"train":tr_name,"test_set":te_name,"split":SPLIT,"seed":seed,"epochs":EPOCHS,"best_epoch":best_ep,"val":best,"test_acc":test,"n_test":len(yte),"hist":hist},open(f"logs/res_{tr_name}_{te_name}_{SPLIT}_{seed}{os.environ.get('TAG','')}.json","w"))
+
+# --- deployable export, for the live in-browser demo ---------------------------------------
+# train.py otherwise keeps only predictions on a fixed held-out set and throws the weights away.
+# When EXPORT=1 is set, also write a model/<tr_name>/ bundle: the trained weights as ONNX (so a
+# browser can run inference with onnxruntime-web on brand-new audio, not just replay this test
+# set), the exact mel filterbank used (so JS feature extraction matches bit-for-bit), and the
+# normalization stats (mu, sd) the model was trained with. tr_name==te_name only (an export must
+# be tested on its own device to mean anything; see "Tuned to one device" in the README).
+if os.environ.get("EXPORT") == "1":
+    if tr_name != te_name:
+        log("EXPORT=1 ignored: train/test set differ; export only the same-device model you intend to deploy")
+    else:
+        mdir = f"model/{tr_name}"; os.makedirs(mdir, exist_ok=True)
+        dummy = torch.zeros(1, 1, 64, 48)
+        torch.onnx.export(model, dummy, f"{mdir}/model.onnx", input_names=["mel"], output_names=["logits"], opset_version=17, dynamic_axes=None, dynamo=False)
+        fb = librosa.filters.mel(sr=sr_tr, n_fft=1536, n_mels=64, fmin=100, fmax=2500)  # (64,769), same call mel_fn made
+        json.dump({"melfb": fb.astype(float).flatten().tolist(), "n_mels": 64, "n_bins": fb.shape[1]}, open(f"{mdir}/melfb.json", "w"))
+        json.dump({"mu": float(mu), "sd": float(sd), "keys": list(KEYS), "sr": sr_tr, "train_set": tr_name, "test_acc": test, "best_epoch": best_ep}, open(f"{mdir}/norm.json", "w"))
+        log(f"EXPORTED {mdir}/model.onnx + melfb.json + norm.json (test_acc={test:.4f})")

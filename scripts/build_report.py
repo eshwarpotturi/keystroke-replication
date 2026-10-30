@@ -46,4 +46,12 @@ notes.append("<b>Limits.</b> One person, one laptop, one room. The model is smal
 head="A phone can hear what you type, but only if the attacker has first recorded your own keyboard on the same device."
 if p2z and z2p and pod: head=f"A phone can hear what you type ({f(ph['mean'])}), but only under the easiest conditions: it drops to {f(pod['mean'])} on later presses and to about {f((p2z['mean']+z2p['mean'])/2)} when the model has not heard your device."
 html=open("scripts/template.html").read().replace("/*HEAD*/",head).replace("/*DATA*/null",json.dumps(rows)).replace("/*NOTES*/[]",json.dumps(notes)).replace("/*TRY*/null",open("data/try.json").read() if os.path.exists("data/try.json") else "null")
-os.makedirs("docs",exist_ok=True); open("docs/index.html","w").write(html); open("index.html","w").write(html); import shutil; shutil.copytree("assets","docs/assets",dirs_exist_ok=True); print("wrote docs/index.html and index.html")
+os.makedirs("docs",exist_ok=True); open("docs/index.html","w").write(html); open("index.html","w").write(html)
+import shutil
+shutil.copytree("assets","docs/assets",dirs_exist_ok=True)
+for f in ("mel.js","live.js"):  # live tab's JS modules, loaded as ./f relative to index.html
+    shutil.copy(f"scripts/{f}",f); shutil.copy(f"scripts/{f}",f"docs/{f}")
+if os.path.isdir("docs/model"): shutil.rmtree("docs/model")  # rebuild from scratch: copytree(dirs_exist_ok=True) merges and never deletes, so a stale/removed export would otherwise linger here forever
+if os.path.isdir("model"):  # trained ONNX export(s), when published (see model/README.md)
+    shutil.copytree("model","docs/model")
+print("wrote docs/index.html and index.html")
