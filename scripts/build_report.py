@@ -49,7 +49,7 @@ html=open("scripts/template.html").read().replace("/*HEAD*/",head).replace("/*DA
 os.makedirs("docs",exist_ok=True); open("docs/index.html","w").write(html); open("index.html","w").write(html)
 import shutil
 shutil.copytree("assets","docs/assets",dirs_exist_ok=True)
-for f in ("mel.js","live.js","enroll.html"):  # live tab's JS modules + the standalone training-data recorder
+for f in ("mel.js","live.js","enroll.html","enroll_iphone.html"):  # live tab's JS modules + the standalone training-data recorders
     shutil.copy(f"scripts/{f}",f); shutil.copy(f"scripts/{f}",f"docs/{f}")
 if os.path.isdir("docs/model"): shutil.rmtree("docs/model")  # rebuild from scratch: copytree(dirs_exist_ok=True) merges and never deletes, so a stale/removed export would otherwise linger here forever
 if os.path.isdir("model"):  # trained ONNX export(s), when published (see model/README.md)
