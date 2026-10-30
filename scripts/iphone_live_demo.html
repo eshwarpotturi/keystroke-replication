@@ -54,6 +54,9 @@ button:disabled{opacity:.35;cursor:default}
     <button class="good" id="yes">✓ It was one of these</button>
     <button class="bad" id="no">✗ Not in the list</button>
   </div>
+  <div class="controls">
+    <button class="ghost" id="dump" style="font-size:14px;color:var(--muted);border-color:var(--rule)" title="Downloads this round's raw audio for debugging">Download this round (debug)</button>
+  </div>
   <div class="status" id="status"></div>
   <p class="hint">This runs the real model in your browser, on this laptop's mic, trained on your own iPhone keyboard clicks. Nothing is sent anywhere. The shortlist is the model's top 5 guesses, ranked by confidence (gold border = its single best guess).</p>
 </div>
@@ -110,6 +113,7 @@ function nextRound(){
 }
 $("#yes").onclick=()=>{ rounds++; hits++; renderTally(); nextRound(); };
 $("#no").onclick=()=>{ rounds++; renderTally(); nextRound(); };
+$("#dump").onclick=()=>window.KeystrokeLive.dumpSession(`iphone_round_${Date.now()}.ksdbg`);
 </script>
 </body>
 </html>
