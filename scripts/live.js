@@ -86,6 +86,24 @@ async function resampleSlice(float32, srcSr, targetSr) {
   return rendered.getChannelData(0).slice();
 }
 
+// Run the model on a (trainSr, BEFORE+AFTER samples) window and return the softmax verdict.
+async function classifyWindow(windowed) {
+  const { mel, nFrames } = logMel(windowed, live.melfb);
+  const input = prepModelInput(mel, nFrames, live.norm.mu, live.norm.sd);
+  const tensor = new ort.Tensor("float32", input, [1, 1, 64, N_FRAMES_USED]);
+  const out = await live.sess.run({ mel: tensor });
+  const logits = out.logits.data;
+  // softmax
+  let mx = -Infinity; for (const v of logits) mx = Math.max(mx, v);
+  let sum = 0; const p = new Float32Array(logits.length);
+  for (let i = 0; i < logits.length; i++) { p[i] = Math.exp(logits[i] - mx); sum += p[i]; }
+  for (let i = 0; i < p.length; i++) p[i] /= sum;
+  const keys = live.norm.keys;
+  let best = 0; for (let i = 1; i < p.length; i++) if (p[i] > p[best]) best = i;
+  const top3 = [...p.keys()].sort((a, b) => p[b] - p[a]).slice(0, 3).map(i => keys[i]);
+  return { guess: keys[best], conf: p[best], top3 };
+}
+
 // Classify one keystroke: raw mic buffer, its sample rate, and the estimated sample index of the press.
 async function classifyStroke(buf, micSr, idxMic) {
   const trainSr = live.norm.sr;
@@ -105,20 +123,19 @@ async function classifyStroke(buf, micSr, idxMic) {
     const si = onset - BEFORE + i;
     windowed[i] = si >= 0 && si < resampled.length ? resampled[si] : 0;
   }
-  const { mel, nFrames } = logMel(windowed, live.melfb);
-  const input = prepModelInput(mel, nFrames, live.norm.mu, live.norm.sd);
-  const tensor = new ort.Tensor("float32", input, [1, 1, 64, N_FRAMES_USED]);
-  const out = await live.sess.run({ mel: tensor });
-  const logits = out.logits.data;
-  // softmax
-  let mx = -Infinity; for (const v of logits) mx = Math.max(mx, v);
-  let sum = 0; const p = new Float32Array(logits.length);
-  for (let i = 0; i < logits.length; i++) { p[i] = Math.exp(logits[i] - mx); sum += p[i]; }
-  for (let i = 0; i < p.length; i++) p[i] /= sum;
-  const keys = live.norm.keys;
-  let best = 0; for (let i = 1; i < p.length; i++) if (p[i] > p[best]) best = i;
-  const top3 = [...p.keys()].sort((a, b) => p[b] - p[a]).slice(0, 3).map(i => keys[i]);
-  return { guess: keys[best], conf: p[best], top3 };
+  return classifyWindow(windowed);
+}
+
+// Find the single loudest short-time-energy peak anywhere in the buffer — no keydown anchor needed
+// at all. Used for the no-sync "tap once, reveal" flow (two devices with no way to coordinate timing).
+function findGlobalPeak(buf) {
+  const win = 256, step = 8;
+  let best = win >> 1, bestE = -1;
+  for (let i = 0; i + win < buf.length; i += step) {
+    let e = 0; for (let j = 0; j < win; j++) e += Math.abs(buf[i + j]);
+    if (e > bestE) { bestE = e; best = i + (win >> 1); }
+  }
+  return best;
 }
 
 // Public API used by the page's UI wiring (added in template.html).
@@ -149,6 +166,24 @@ window.KeystrokeLive = {
     return live.classified;
   },
   reset() { live.chunks = []; live.keyLog = []; live.classified = []; },
+  // Like reset() but doesn't touch the mic session — for "tap again" between rounds of the
+  // no-sync single-tap demo, where re-requesting the mic each round would be disruptive.
+  clearBuffer() { live.chunks = []; live.keyLog = []; live.classified = []; },
+  // No-sync classification: finds the single loudest tap anywhere in the buffer recorded since
+  // the last clearBuffer()/reset(), and classifies it. Works for exactly one tap in the buffer —
+  // call clearBuffer() before each new tap. Doesn't need any keydown signal or timing coordination
+  // with a separate device, unlike classifyAll()/onKeydown().
+  async classifySingleTap() {
+    const buf = fullBuffer(), micSr = live.sr, trainSr = live.norm.sr;
+    const resampled = await resampleSlice(buf, micSr, trainSr);
+    const onset = findGlobalPeak(resampled);
+    const windowed = new Float64Array(BEFORE + AFTER);
+    for (let i = 0; i < BEFORE + AFTER; i++) {
+      const si = onset - BEFORE + i;
+      windowed[i] = si >= 0 && si < resampled.length ? resampled[si] : 0;
+    }
+    return classifyWindow(windowed);
+  },
   hasModel(set) { return SETS.includes(set); },
   keyLogLength() { return live.keyLog.length; },
   // Package the raw continuous buffer + keydown log for offline debugging (not used by the normal

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keystroke Listener — iPhone, live (no sync needed)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#12171d;--paper:#1a2129;--ink:#e8edf2;--ink2:#b4bfcb;--muted:#8b97a4;--rule:#2c3540;
+ --good:#3ccf7e;--good-bg:#14301f;--bad:#ff6b5e;--bad-bg:#3a1714;
+ --serif:"Fraunces",Georgia,serif;--sans:"Source Sans 3",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;display:grid;place-items:center}
+.wrap{max-width:620px;padding:32px;text-align:center}
+h1{font-family:var(--serif);font-weight:800;font-size:30px;margin:0 0 6px}
+.sub{color:var(--muted);font-size:16px;line-height:1.5;margin-bottom:28px}
+.stage{background:var(--paper);border:1px solid var(--rule);border-radius:16px;padding:34px 30px;min-height:220px;display:grid;place-items:center}
+.idle{color:var(--muted);font-size:17px;line-height:1.6}
+.listening{font-size:19px;color:var(--ink2)}
+.pulse{width:14px;height:14px;border-radius:50%;background:var(--good);display:inline-block;margin-right:8px;animation:p 1.2s infinite}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+.guess{font-family:var(--mono);font-size:96px;font-weight:700}
+.conf{font-size:18px;color:var(--muted);margin-top:6px}
+.top3{font-size:15px;color:var(--muted);margin-top:10px}
+.controls{margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+button{font:inherit;font-size:16px;padding:11px 26px;border-radius:99px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer}
+button.ghost{background:transparent;color:var(--ink)}
+button:disabled{opacity:.35;cursor:default}
+.status{margin-top:14px;font-size:14px;color:var(--muted);min-height:20px}
+.hint{font-size:14px;color:var(--muted);margin-top:26px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>iPhone keyboard, live</h1>
+  <p class="sub">No syncing between devices needed. Start listening, tap one key on your iPhone, press Reveal.</p>
+  <div class="stage" id="stage">
+    <div class="idle">Press Start, allow the mic, then tap any key on your iPhone's keyboard.</div>
+  </div>
+  <div class="controls">
+    <button id="start">Start listening</button>
+    <button id="reveal" disabled>Reveal</button>
+    <button class="ghost" id="again" disabled>Tap again</button>
+  </div>
+  <div class="status" id="status"></div>
+  <p class="hint">This runs the real model in your browser, on this laptop's mic, trained on your own iPhone keyboard clicks. Nothing is sent anywhere.</p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
+<script type="module">
+import "./live.js";
+const $=s=>document.querySelector(s);
+let started=false;
+
+async function begin(){
+  $("#status").textContent="Loading the model…";
+  $("#start").disabled=true;
+  try{ await window.KeystrokeLive.init("iphone"); }
+  catch(e){ $("#status").textContent="No trained model published yet for \"iphone\"."; $("#start").disabled=false; return; }
+  try{ await window.KeystrokeLive.startMic(); }
+  catch(e){ $("#status").textContent="Microphone access was blocked. Allow the mic and press Start again."; $("#start").disabled=false; return; }
+  started=true;
+  $("#status").textContent="";
+  $("#stage").innerHTML=`<div class="listening"><span class="pulse"></span>Listening — tap one key on your iPhone, then press Reveal</div>`;
+  $("#reveal").disabled=false; $("#start").textContent="Listening…";
+}
+$("#start").onclick=begin;
+
+$("#reveal").onclick=async()=>{
+  $("#status").textContent="Finding the tap…";
+  $("#reveal").disabled=true;
+  const r = await window.KeystrokeLive.classifySingleTap();
+  $("#stage").innerHTML=`<div><div class="guess">${r.guess}</div><div class="conf">${Math.round(r.conf*100)}% sure</div><div class="top3">top guesses: ${r.top3.join(", ")}</div></div>`;
+  $("#status").textContent="";
+  $("#again").disabled=false;
+};
+
+$("#again").onclick=()=>{
+  window.KeystrokeLive.clearBuffer();
+  $("#stage").innerHTML=`<div class="listening"><span class="pulse"></span>Listening — tap one key on your iPhone, then press Reveal</div>`;
+  $("#reveal").disabled=false; $("#again").disabled=true;
+};
+</script>
+</body>
+</html>
