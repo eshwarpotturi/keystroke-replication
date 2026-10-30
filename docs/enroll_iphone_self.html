@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keystroke Listener — record iPhone taps (self-listening)</title>
+<style>
+body{margin:0;background:#12171d;color:#e8edf2;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:grid;place-items:center}
+.wrap{max-width:640px;padding:28px;text-align:center}
+h1{font-size:22px;margin:0 0 6px}
+.sub{color:#8b97a4;font-size:15px;margin-bottom:28px;line-height:1.5}
+.key{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:120px;font-weight:700;background:#1a2129;border:2px solid #2c3540;border-radius:16px;padding:30px 50px;display:inline-block;min-width:120px}
+.count{font-size:20px;margin-top:14px;color:#b4bfcb}
+.bar{height:8px;background:#232b34;border-radius:4px;margin-top:20px;overflow:hidden}
+.bar i{display:block;height:100%;background:#3ccf7e;width:0%}
+button{font:inherit;font-size:16px;padding:10px 22px;border-radius:99px;border:1px solid #e8edf2;background:#e8edf2;color:#12171d;cursor:pointer;margin:6px}
+button.ghost{background:transparent;color:#e8edf2}
+button:disabled{opacity:.4;cursor:default}
+.status{margin-top:18px;font-size:15px;color:#8b97a4;min-height:24px}
+.hint{font-size:14px;color:#8b97a4;margin-top:24px;max-width:480px;margin-left:auto;margin-right:auto}
+.done{font-size:18px;line-height:1.6}
+code{background:#232b34;padding:2px 7px;border-radius:5px}
+.warn{background:#3a2c0c;border:1px solid #5a4620;border-radius:10px;padding:14px 18px;font-size:15px;color:#f2b632;text-align:left;margin-bottom:22px}
+/* the field that summons the iPhone's own keyboard right on this page */
+#kbField{font-size:16px;padding:12px 16px;width:100%;max-width:400px;border-radius:10px;border:2px solid #2c3540;background:#1a2129;color:#e8edf2;text-align:center;margin:14px 0}
+#kbField:focus{border-color:#3ccf7e;outline:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Record iPhone taps (on this iPhone)</h1>
+  <div class="warn">Open this page <b>in Safari on your iPhone</b> and keep it on screen the whole time &mdash; don't switch apps, recording stops if Safari goes to the background. Keep "Keyboard Clicks" sound ON (Settings → Sounds &amp; Haptics → Keyboard Feedback).</div>
+  <p class="sub" id="sub">Tap the text box below to bring up your keyboard, then tap the key shown on <b>that</b> keyboard. Nothing you type is read or stored &mdash; the box is only there to open the keyboard. Taps are found afterwards from the sound, same as the separate-mic version.</p>
+  <div id="pre">
+    <label>Taps per key: <input id="n" type="number" value="20" min="10" max="30" style="width:60px;font-size:16px;padding:4px"></label>
+    <div><button id="start">Start &amp; allow microphone</button></div>
+  </div>
+  <div id="live" style="display:none">
+    <div class="key" id="keyEl">a</div>
+    <div class="count" id="countEl"></div>
+    <div class="bar"><i id="barEl"></i></div>
+    <input id="kbField" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="tap here to open your keyboard">
+    <div class="status" id="statusEl">Recording&hellip; tap the key above on the keyboard, <span id="nEl">20</span> times</div>
+    <div><button id="next">Next key &rarr;</button> <button class="ghost" id="back">&larr; Redo previous key</button></div>
+  </div>
+  <div id="doneBox" style="display:none">
+    <div class="done" id="doneMsg"></div>
+    <button id="download">Download the recording</button>
+    <p class="hint">Send the downloaded file back in the chat (use the Files app or AirDrop/share to get it off the phone). Same format as the separate-mic version.</p>
+  </div>
+  <p class="hint" id="bottomHint">Takes about 10–15 minutes for 36 keys. Do it somewhere reasonably quiet. For digits, tap the "123" key on your keyboard to switch, then tap the digit, same as normal typing.</p>
+</div>
+<script>
+const KEYS="1234567890qwertyuiopasdfghjklzxcvbnm";
+let ctx,stream,proc,gain,sr,chunks=[],active=false;
+let ki=0, need=20, boundaries=[];
+const $=s=>document.querySelector(s);
+function setKeyUI(){
+  $("#keyEl").textContent=KEYS[ki]; $("#countEl").textContent=`key ${ki+1} of ${KEYS.length}`;
+  $("#barEl").style.width=`${Math.round(100*ki/KEYS.length)}%`; $("#back").disabled = boundaries.length===0;
+  $("#kbField").value=""; $("#kbField").focus();
+}
+
+function samplesSoFar(){ return chunks.reduce((s,c)=>s+c.length,0); }
+
+async function start(){
+  need=Math.max(5,Math.min(40,parseInt($("#n").value)||20));
+  $("#nEl").textContent=need;
+  ctx=new (window.AudioContext||window.webkitAudioContext)();
+  stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  sr=ctx.sampleRate;
+  const src=ctx.createMediaStreamSource(stream);
+  proc=ctx.createScriptProcessor(4096,1,1);
+  gain=ctx.createGain(); gain.gain.value=0;
+  chunks=[]; active=true; boundaries=[]; ki=0;
+  proc.onaudioprocess=e=>{ if(active) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+  src.connect(proc); proc.connect(gain); gain.connect(ctx.destination);
+  $("#pre").style.display="none"; $("#live").style.display="block";
+  setKeyUI();
+}
+$("#start").onclick=start;
+$("#next").onclick=()=>{
+  boundaries.push({ch:KEYS[ki], endSample:samplesSoFar()});
+  ki++;
+  if(ki>=KEYS.length){ finish(); return; }
+  setKeyUI();
+};
+$("#back").onclick=()=>{
+  if(boundaries.length===0)return;
+  boundaries.pop(); ki--; setKeyUI();
+};
+// never actually use what's typed into kbField — it exists purely to summon the keyboard
+$("#kbField").addEventListener("input",()=>{ $("#kbField").value=""; });
+
+async function finish(){
+  active=false;
+  try{ proc.disconnect(); gain.disconnect(); }catch{}
+  try{ stream.getTracks().forEach(t=>t.stop()); }catch{}
+  $("#kbField").blur();
+  $("#live").style.display="none";
+  const n=samplesSoFar(), buf=new Float32Array(n); let o=0;
+  for(const c of chunks){buf.set(c,o);o+=c.length;}
+  const pcm=new Int16Array(n);
+  for(let i=0;i<n;i++) pcm[i]=Math.max(-32768,Math.min(32767,Math.round(buf[i]*32767)));
+  const header=JSON.stringify({sr,perKey:need,boundaries});
+  const headerBytes=new TextEncoder().encode(header);
+  const magic=new TextEncoder().encode("KSIPH");
+  const lenBuf=new Uint32Array([headerBytes.length]);
+  const blob=new Blob([magic,new Uint8Array(lenBuf.buffer),headerBytes,new Uint8Array(pcm.buffer)],{type:"application/octet-stream"});
+  const url=URL.createObjectURL(blob);
+  const sizeMB=(blob.size/1e6).toFixed(1);
+  $("#doneMsg").innerHTML=`Recorded ${(n/sr).toFixed(1)}s across ${KEYS.length} keys (${sizeMB} MB). Taps haven't been found yet &mdash; that happens when this file is decoded.`;
+  $("#download").onclick=()=>{ const a=document.createElement("a"); a.href=url; a.download=`iphoneself_session_${Date.now()}.ksiph`; a.click(); };
+  $("#doneBox").style.display="block"; $("#bottomHint").style.display="none";
+}
+</script>
+</body>
+</html>
