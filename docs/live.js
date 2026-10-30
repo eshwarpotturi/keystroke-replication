@@ -174,7 +174,13 @@ window.KeystrokeLive = {
   // call clearBuffer() before each new tap. Doesn't need any keydown signal or timing coordination
   // with a separate device, unlike classifyAll()/onKeydown().
   async classifySingleTap() {
-    const buf = fullBuffer(), micSr = live.sr, trainSr = live.norm.sr;
+    const full = fullBuffer(), micSr = live.sr, trainSr = live.norm.sr;
+    // Only look at the last few seconds: the tap always happens right before Reveal is pressed,
+    // and scanning+resampling an unbounded buffer (if "Listening" sits open a while) is what hung
+    // this in practice — not just slow, OfflineAudioContext can choke on a very long buffer.
+    const TAIL_S = 6;
+    const tailLen = Math.min(full.length, Math.round(TAIL_S * micSr));
+    const buf = full.slice(full.length - tailLen);
     const resampled = await resampleSlice(buf, micSr, trainSr);
     const onset = findGlobalPeak(resampled);
     const windowed = new Float64Array(BEFORE + AFTER);

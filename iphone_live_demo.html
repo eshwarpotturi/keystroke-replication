@@ -83,7 +83,13 @@ $("#start").onclick=begin;
 $("#reveal").onclick=async()=>{
   $("#status").textContent="Finding the tap…";
   $("#reveal").disabled=true;
-  const r = await window.KeystrokeLive.classifySingleTap();
+  let r;
+  try{ r = await window.KeystrokeLive.classifySingleTap(); }
+  catch(e){
+    $("#status").textContent="Couldn't read that one — press Reveal again, or Tap again to restart this round.";
+    $("#reveal").disabled=false;
+    return;
+  }
   lastGuess=r;
   $("#stage").innerHTML=`
     <div class="shortlist-label">The model's shortlist</div>
