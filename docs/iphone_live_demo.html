@@ -19,7 +19,9 @@ h1{font-family:var(--serif);font-weight:800;font-size:28px;margin:0 0 6px}
 .tally b{color:var(--good)}
 .stage{background:var(--paper);border:1px solid var(--rule);border-radius:16px;padding:34px 30px;min-height:240px;display:grid;place-items:center}
 .idle{color:var(--muted);font-size:17px;line-height:1.6}
-.listening{font-size:19px;color:var(--ink2)}
+.listening{font-size:19px;color:var(--ink2);line-height:1.6}
+.steps{font-size:16px;color:var(--ink2);margin-top:10px;text-align:left;display:inline-block}
+.steps li{margin:4px 0}
 .pulse{width:14px;height:14px;border-radius:50%;background:var(--good);display:inline-block;margin-right:8px;animation:p 1.2s infinite}
 @keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
 .shortlist-label{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
@@ -41,10 +43,10 @@ button:disabled{opacity:.35;cursor:default}
 <body>
 <div class="wrap">
   <h1>iPhone keyboard, live</h1>
-  <p class="sub">No syncing between devices needed. Tap one key on your iPhone — the model's shortlist of five guesses is right about 6 times out of 10.</p>
+  <p class="sub">No syncing between devices needed. Tap one key on your iPhone three times — the model's shortlist of five guesses is right about 6 times out of 10.</p>
   <div class="tally" id="tally">0 of 0 rounds — the key you tapped was in the shortlist</div>
   <div class="stage" id="stage">
-    <div class="idle">Press Start, allow the mic, then tap any key on your iPhone's keyboard.</div>
+    <div class="idle">Press Start, allow the mic, pick any key, then follow the steps.</div>
   </div>
   <div class="controls" id="mainControls">
     <button id="start">Start listening</button>
@@ -64,10 +66,26 @@ button:disabled{opacity:.35;cursor:default}
 <script type="module">
 import "./live.js";
 const $=s=>document.querySelector(s);
-let hits=0, rounds=0, lastGuess=null;
+let hits=0, rounds=0;
+const N_TAPS = 3;
+const MIN_WAIT_MS = 4500; // enough time for 3 paced taps; Reveal stays disabled until this elapses
 
 function renderTally(){
   $("#tally").innerHTML = `<b>${hits}</b> of ${rounds} rounds — the key you tapped was in the shortlist`;
+}
+
+function listeningHTML(){
+  return `<div class="listening"><span class="pulse"></span>Listening
+    <ol class="steps">
+      <li>Pick any key on your iPhone's keyboard</li>
+      <li>Tap it, pause a beat, tap it again, pause, tap it a third time</li>
+      <li>Then press Reveal below</li>
+    </ol></div>`;
+}
+
+function armReveal(){
+  $("#reveal").disabled = true;
+  setTimeout(() => { if ($("#mainControls").style.display !== "none") $("#reveal").disabled = false; }, MIN_WAIT_MS);
 }
 
 async function begin(){
@@ -78,22 +96,22 @@ async function begin(){
   try{ await window.KeystrokeLive.startMic(); }
   catch(e){ $("#status").textContent="Microphone access was blocked. Allow the mic and press Start again."; $("#start").disabled=false; return; }
   $("#status").textContent="";
-  $("#stage").innerHTML=`<div class="listening"><span class="pulse"></span>Listening — tap one key on your iPhone, then press Reveal</div>`;
-  $("#reveal").disabled=false; $("#start").style.display="none";
+  $("#stage").innerHTML=listeningHTML();
+  $("#start").style.display="none";
+  armReveal();
 }
 $("#start").onclick=begin;
 
 $("#reveal").onclick=async()=>{
-  $("#status").textContent="Finding the tap…";
+  $("#status").textContent="Finding the taps…";
   $("#reveal").disabled=true;
   let r;
-  try{ r = await window.KeystrokeLive.classifySingleTap(); }
+  try{ r = await window.KeystrokeLive.classifyMultiTap(N_TAPS); }
   catch(e){
-    $("#status").textContent="Couldn't read that one — press Reveal again, or Tap again to restart this round.";
+    $("#status").textContent=`Only found a clear, separate tap for part of that — tap the same key ${N_TAPS} times with a clean pause between each, then press Reveal again.`;
     $("#reveal").disabled=false;
     return;
   }
-  lastGuess=r;
   $("#stage").innerHTML=`
     <div class="shortlist-label">The model's shortlist</div>
     <div class="shortlist">${r.top5.map(k=>`<div class="chip${k===r.guess?' best':''}">${k}</div>`).join("")}</div>
@@ -106,10 +124,10 @@ $("#reveal").onclick=async()=>{
 
 function nextRound(){
   window.KeystrokeLive.clearBuffer();
-  $("#stage").innerHTML=`<div class="listening"><span class="pulse"></span>Listening — tap one key on your iPhone, then press Reveal</div>`;
+  $("#stage").innerHTML=listeningHTML();
   $("#scoreControls").style.display="none";
   $("#mainControls").style.display="flex";
-  $("#reveal").disabled=false;
+  armReveal();
 }
 $("#yes").onclick=()=>{ rounds++; hits++; renderTally(); nextRound(); };
 $("#no").onclick=()=>{ rounds++; renderTally(); nextRound(); };
