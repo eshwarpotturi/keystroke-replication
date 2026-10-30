@@ -5,12 +5,13 @@
 import { logMel, prepModelInput, N_FRAMES_USED } from "./mel.js";
 
 const SETS = ["phone", "zoom", "office"]; // which trained, same-device model to load
-const BEFORE_S = 2400 / 44100, AFTER_S = 12000 / 44100; // training window shape, as fractions of 1s (sr-independent)
+// Window shape as RAW SAMPLE COUNTS at the training sample rate — must match scripts/enroll.html's
+// BEFORE/AFTER exactly (both are literally 2400/12000), not a time duration computed against some
+// assumed sample rate. The office/phone/zoom models were each trained at their own sr (48000, 44100,
+// 32000...); treating BEFORE/AFTER as "2400/44100 of a second" silently resizes and misaligns the
+// window for any model not trained at 44100 — which is exactly what office (48000) hit.
+const BEFORE = 2400, AFTER = 12000;
 const SEARCH_S = 0.15; // how far around the estimated keydown time to search for the real onset
-// a keystroke needs (SEARCH_S + AFTER_S) of audio recorded *after* it before it can be classified;
-// MARGIN_MS is that, plus slack for ScriptProcessor buffering lag, so classifyAll() never slices past
-// what's actually been captured (which would silently zero-pad the tail of the window).
-const MARGIN_MS = Math.ceil((SEARCH_S + AFTER_S) * 1000) + 250;
 
 let live = {
   set: null, sess: null, melfb: null, norm: null,
@@ -19,6 +20,7 @@ let live = {
   keyLog: [], // {ch, tPerf}
   classified: [], // cache, parallel to keyLog — classifyAll() only processes new entries
   active: false,
+  marginMs: 1000, // placeholder until init() computes the real value from the loaded model's sr
 };
 
 async function loadModel(set) {
@@ -87,17 +89,20 @@ async function resampleSlice(float32, srcSr, targetSr) {
 // Classify one keystroke: raw mic buffer, its sample rate, and the estimated sample index of the press.
 async function classifyStroke(buf, micSr, idxMic) {
   const trainSr = live.norm.sr;
-  // pull a generous raw slice around the estimate (search window + training window, in mic-sr samples)
-  const needBefore = Math.round((SEARCH_S + BEFORE_S) * micSr), needAfter = Math.round((SEARCH_S + AFTER_S) * micSr);
+  // BEFORE/AFTER are sample counts at trainSr; convert to a time duration, then to mic-sr samples,
+  // to size the raw (pre-resample) slice we pull out of the live buffer.
+  const beforeSec = BEFORE / trainSr, afterSec = AFTER / trainSr;
+  const needBefore = Math.round((SEARCH_S + beforeSec) * micSr), needAfter = Math.round((SEARCH_S + afterSec) * micSr);
   const lo = Math.max(0, idxMic - needBefore), hi = Math.min(buf.length, idxMic + needAfter);
   const raw = buf.slice(lo, hi);
   const resampled = await resampleSlice(raw, micSr, trainSr);
   const localCenter = Math.round((idxMic - lo) * trainSr / micSr);
   const onset = findOnset(resampled, trainSr, localCenter, SEARCH_S);
-  const before = Math.round(BEFORE_S * trainSr), after = Math.round(AFTER_S * trainSr);
-  const windowed = new Float64Array(before + after);
-  for (let i = 0; i < before + after; i++) {
-    const si = onset - before + i;
+  // from here on, BEFORE/AFTER are used as raw sample counts in the resampled (trainSr) buffer —
+  // identical in kind to what scripts/enroll.html used when it built the training windows.
+  const windowed = new Float64Array(BEFORE + AFTER);
+  for (let i = 0; i < BEFORE + AFTER; i++) {
+    const si = onset - BEFORE + i;
     windowed[i] = si >= 0 && si < resampled.length ? resampled[si] : 0;
   }
   const { mel, nFrames } = logMel(windowed, live.melfb);
@@ -121,6 +126,10 @@ window.KeystrokeLive = {
   async init(set) {
     const m = await loadModel(set);
     live.set = set; live.sess = m.sess; live.melfb = m.melfb; live.norm = m.norm;
+    // a keystroke needs (SEARCH_S + AFTER/trainSr) of audio recorded *after* it before it can be
+    // classified; this depends on the loaded model's own sample rate, so it's computed here rather
+    // than assumed at module load — the same mistake that broke BEFORE_S/AFTER_S above.
+    live.marginMs = Math.ceil((SEARCH_S + AFTER / m.norm.sr) * 1000) + 250;
     return m.norm;
   },
   startMic,
@@ -132,7 +141,7 @@ window.KeystrokeLive = {
     const buf = fullBuffer(), micSr = live.sr, now = performance.now();
     for (let i = live.classified.length; i < live.keyLog.length; i++) {
       const k = live.keyLog[i];
-      if (now - k.tPerf < MARGIN_MS) break; // not enough trailing audio captured yet — try again next call
+      if (now - k.tPerf < live.marginMs) break; // not enough trailing audio captured yet — try again next call
       const idx = Math.round(((k.tPerf - live.t0Perf) / 1000) * micSr);
       try { live.classified.push({ ch: k.ch, ...(await classifyStroke(buf, micSr, idx)) }); }
       catch (e) { live.classified.push({ ch: k.ch, guess: "?", conf: 0, top3: [] }); }
