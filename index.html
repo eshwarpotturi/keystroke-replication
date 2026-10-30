@@ -199,7 +199,7 @@ table{border-collapse:collapse;width:100%;font-size:18px}th{text-align:left;font
     <p class="body" id="liveIntro">This runs the real model in your browser on your own typing &mdash; nothing is sent anywhere. It only works on the device and microphone it was trained on (see "Where it fits"); on any other machine it will guess close to chance.</p>
     <div class="tool" id="liveTool">
       <div class="chips" id="liveChips"></div>
-      <div class="ctl" style="margin-bottom:6px"><button class="btn" id="liveStart">Start microphone</button><button class="btn" id="liveReset" style="background:transparent;color:var(--ink)">Reset</button><span id="liveStatus" class="hint" style="margin-left:4px"></span></div>
+      <div class="ctl" style="margin-bottom:6px"><button class="btn" id="liveStart">Start microphone</button><button class="btn" id="liveReset" style="background:transparent;color:var(--ink)">Reset</button><button class="btn" id="liveDump" style="background:transparent;color:var(--muted);border-color:var(--rule);font-size:15px" title="Downloads the raw audio and timing from this session for debugging">Download session (debug)</button><span id="liveStatus" class="hint" style="margin-left:4px"></span></div>
 
       <div id="liveWarmup" class="hide" style="margin-top:14px">
         <div class="ft" style="font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Step 1 &middot; warm-up &mdash; type a sentence or two here</div>
@@ -365,6 +365,7 @@ async function begin(){
   $("#liveText").disabled=false; $("#liveText").focus();
 }
 $("#liveStart").onclick=begin;
+$("#liveDump").onclick=()=>{ if(!started){$("#liveStatus").textContent="Start the mic and type something first.";return} window.KeystrokeLive.dumpSession(); };
 $("#liveReset").onclick=()=>{
   window.KeystrokeLive.stopMic(); window.KeystrokeLive.reset();
   started=false; warmChars=0; warmOk=0; renderedWarm=0; pwStartIdx=null;

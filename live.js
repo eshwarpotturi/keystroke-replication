@@ -151,4 +151,22 @@ window.KeystrokeLive = {
   reset() { live.chunks = []; live.keyLog = []; live.classified = []; },
   hasModel(set) { return SETS.includes(set); },
   keyLogLength() { return live.keyLog.length; },
+  // Package the raw continuous buffer + keydown log for offline debugging (not used by the normal
+  // UI flow). Triggers a download; the file can be analyzed with scripts/decode_debug_session.py.
+  dumpSession(filename) {
+    const buf = fullBuffer();
+    const header = JSON.stringify({
+      sr: live.sr, set: live.set, trainSr: live.norm ? live.norm.sr : null,
+      marginMs: live.marginMs,
+      keyLog: live.keyLog.map(k => ({ ch: k.ch, tRelMs: k.tPerf - live.t0Perf })),
+    });
+    const headerBytes = new TextEncoder().encode(header);
+    const magic = new TextEncoder().encode("KSDBG");
+    const lenBuf = new Uint32Array([headerBytes.length]);
+    const pcm = new Int16Array(buf.length);
+    for (let i = 0; i < buf.length; i++) pcm[i] = Math.max(-32768, Math.min(32767, Math.round(buf[i] * 32767)));
+    const blob = new Blob([magic, new Uint8Array(lenBuf.buffer), headerBytes, new Uint8Array(pcm.buffer)], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = filename || `debug_session_${Date.now()}.ksdbg`; a.click();
+  },
 };
