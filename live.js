@@ -4,7 +4,7 @@
 // until then the panel says so plainly instead of pretending to work.
 import { logMel, prepModelInput, N_FRAMES_USED } from "./mel.js";
 
-const SETS = ["phone", "zoom", "office"]; // which trained, same-device model to load
+const SETS = ["phone", "zoom", "office", "iphone"]; // which trained, same-device model to load
 // Window shape as RAW SAMPLE COUNTS at the training sample rate — must match scripts/enroll.html's
 // BEFORE/AFTER exactly (both are literally 2400/12000), not a time duration computed against some
 // assumed sample rate. The office/phone/zoom models were each trained at their own sr (48000, 44100,
